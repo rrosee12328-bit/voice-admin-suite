@@ -120,7 +120,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/admin/analytics")}>
-                    <Link to="/admin">
+                    <Link to="/admin/analytics">
                       <Activity />
                       <span>Platform Analytics</span>
                     </Link>
