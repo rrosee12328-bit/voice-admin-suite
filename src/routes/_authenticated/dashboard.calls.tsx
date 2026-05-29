@@ -234,9 +234,14 @@ function CallsPage() {
                       <td className="px-3 py-2"><FlagBadges call={c} /></td>
                       <td className="px-3 py-2 max-w-[260px]">
                         {preview ? (
-                          <span className="block truncate text-xs text-muted-foreground" title={c.transcript ?? ""}>
+                          <Link
+                            to="/dashboard/calls/$id"
+                            params={{ id: c.id }}
+                            className="block truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+                            title={c.transcript ?? ""}
+                          >
                             {preview}
-                          </span>
+                          </Link>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
@@ -259,15 +264,15 @@ function CallsPage() {
                       <td className="px-3 py-2 text-right">
                         <div className="inline-flex items-center gap-1">
                           {c.recording_url && (
-                            <a
-                              href={c.recording_url}
-                              target="_blank"
-                              rel="noreferrer"
+                            <Link
+                              to="/dashboard/calls/$id"
+                              params={{ id: c.id }}
                               className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                               aria-label="Play recording"
+                              title="Open player"
                             >
                               <Play className="h-4 w-4" />
-                            </a>
+                            </Link>
                           )}
                           <Link
                             to="/dashboard/calls/$id"
