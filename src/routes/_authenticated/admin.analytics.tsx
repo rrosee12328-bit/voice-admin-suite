@@ -50,6 +50,18 @@ function PlatformAnalytics() {
     },
   });
 
+  const monthCallsQ = useQuery({
+    queryKey: ["platform-analytics-calls-rows", since],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("calls")
+        .select("tenant_id, duration_seconds")
+        .gte("created_at", since);
+      if (error) throw error;
+      return (data ?? []) as Pick<Call, "tenant_id" | "duration_seconds">[];
+    },
+  });
+
   const recentCallsQ = useQuery({
     queryKey: ["platform-analytics-recent-calls"],
     queryFn: async () => {
@@ -71,11 +83,24 @@ function PlatformAnalytics() {
   const tenantById: Record<string, Tenant> = {};
   for (const t of tenants) tenantById[t.id] = t;
 
+  // Per-tenant aggregates from this month's calls
+  const perTenant: Record<string, { calls: number; seconds: number }> = {};
+  for (const c of monthCallsQ.data ?? []) {
+    const t = perTenant[c.tenant_id] || { calls: 0, seconds: 0 };
+    t.calls += 1;
+    t.seconds += c.duration_seconds ?? 0;
+    perTenant[c.tenant_id] = t;
+  }
+  const totalMinutes = Math.round(
+    Object.values(perTenant).reduce((s, t) => s + t.seconds, 0) / 60,
+  );
+
   const planBreakdown = tenants.reduce<Record<string, number>>((acc, t) => {
     const k = t.plan || "unknown";
     acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {});
+
 
   return (
     <div className="flex flex-col gap-6 p-6">
