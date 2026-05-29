@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Phone, DollarSign, Calendar, Activity } from "lucide-react";
+import { Users, Phone, DollarSign, Calendar, Activity, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tenant } from "@/integrations/supabase/app-types";
+import type { Tenant, Call } from "@/integrations/supabase/app-types";
 import { PLAN_PRICE, PLAN_LABEL } from "@/lib/plan-gating";
+import { PlanBadge } from "@/components/badges";
+import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   head: () => ({
