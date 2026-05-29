@@ -26,7 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard/calls")({
-  component: CallsPage,
+  component: CallsRoute,
 });
 
 const STATUSES = ["new", "in_progress", "resolved", "needs_follow_up", "archived"];
@@ -50,12 +50,17 @@ function FlagBadges({ call }: { call: Call }) {
   );
 }
 
-function CallsPage() {
+function CallsRoute() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   if (pathname !== "/dashboard/calls") {
     return <Outlet />;
   }
+
+  return <CallsPage />;
+}
+
+function CallsPage() {
 
   const me = useMe();
   const isSuperAdmin = me.profile.role === "super_admin";
