@@ -27,9 +27,5 @@ function ClientLayout() {
 
   if (!profile || profile.role === "super_admin") return null;
 
-  return (
-    <DashboardShell items={items} scopeLabel="Client">
-      <Outlet />
-    </DashboardShell>
-  );
+  return <DashboardShell items={items} scopeLabel="Client" />;
 }
