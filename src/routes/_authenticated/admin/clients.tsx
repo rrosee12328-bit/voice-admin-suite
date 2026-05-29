@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, type Tenant } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/DashboardShell";
@@ -27,6 +27,7 @@ function statusVariant(s: string | null): "default" | "secondary" | "destructive
 }
 
 function AdminClients() {
+  const navigate = useNavigate();
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "tenants"],
     queryFn: async () => {
@@ -71,26 +72,30 @@ function AdminClients() {
             </TableHeader>
             <TableBody>
               {data.map((t) => (
-                <TableRow key={t.id} className="cursor-pointer" asChild>
-                  <Link
-                    to="/admin/clients/$tenantId"
-                    params={{ tenantId: t.id }}
-                  >
-                    <TableCell className="font-medium">{t.name}</TableCell>
-                    <TableCell className="capitalize">{t.plan ?? "—"}</TableCell>
-                    <TableCell>
-                      {Math.round(t.minutes_used_this_month ?? 0)} /{" "}
-                      {t.minutes_included ?? 0}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariant(t.stripe_subscription_status)}>
-                        {t.stripe_subscription_status ?? "—"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(t.created_at)}
-                    </TableCell>
-                  </Link>
+                <TableRow
+                  key={t.id}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    navigate({
+                      to: "/admin/clients/$tenantId",
+                      params: { tenantId: t.id },
+                    })
+                  }
+                >
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell className="capitalize">{t.plan ?? "—"}</TableCell>
+                  <TableCell>
+                    {Math.round(t.minutes_used_this_month ?? 0)} /{" "}
+                    {t.minutes_included ?? 0}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant(t.stripe_subscription_status)}>
+                      {t.stripe_subscription_status ?? "—"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(t.created_at)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
