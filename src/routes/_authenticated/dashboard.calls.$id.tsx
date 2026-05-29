@@ -15,6 +15,7 @@ import {
 } from "@/components/badges";
 
 import { LockedFeature } from "@/components/locked-feature";
+import { AudioPlayer } from "@/components/audio-player";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -35,7 +36,10 @@ function CallDetailPage() {
   const { id } = Route.useParams();
   const me = useMe();
   const plan = me.tenant?.plan ?? "phone_starter";
+  const isSuperAdmin = me.profile.role === "super_admin";
+  const canSeeTranscript = isSuperAdmin || canUse(plan, "transcripts");
   const queryClient = useQueryClient();
+
 
   const { data: call, isLoading } = useQuery({
     queryKey: ["call", id],
@@ -201,23 +205,39 @@ function CallDetailPage() {
           {call.recording_url && (
             <div className="rounded-lg border border-border bg-card p-5">
               <h2 className="mb-3 text-sm font-semibold">Recording</h2>
-              <audio controls src={call.recording_url} className="w-full" />
+              <AudioPlayer src={call.recording_url} />
             </div>
           )}
 
           <div className="rounded-lg border border-border bg-card p-5">
-            <h2 className="mb-3 text-sm font-semibold">Full Transcript</h2>
-            {canUse(plan, "transcripts") ? (
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Full Transcript</h2>
+              {canSeeTranscript && call.transcript && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(call.transcript || "");
+                    toast.success("Transcript copied");
+                  }}
+                >
+                  Copy
+                </Button>
+              )}
+            </div>
+            {canSeeTranscript ? (
               call.transcript ? (
-                <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed">
+                <div className="max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed">
                   {call.transcript}
-                </pre>
+                </div>
               ) : (
                 <p className="text-xs text-muted-foreground">No transcript available for this call.</p>
               )
             ) : (
               <LockedFeature feature="transcripts" />
             )}
+
           </div>
         </div>
 
