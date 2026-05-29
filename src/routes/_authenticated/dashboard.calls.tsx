@@ -1,17 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Search, Play, ExternalLink, MessageSquare } from "lucide-react";
+import { Search, Play, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useMe } from "@/lib/me";
 import { supabase } from "@/integrations/supabase/client";
-import type { Call } from "@/integrations/supabase/app-types";
+import type { Call, Tenant } from "@/integrations/supabase/app-types";
 import { canUse } from "@/lib/plan-gating";
 import {
   OutcomeBadge,
   ReasonBadge,
-  JourneyBadge,
   LeadScoreBadge,
 } from "@/components/badges";
 import { LockedFeature } from "@/components/locked-feature";
@@ -24,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard/calls")({
   component: CallsPage,
@@ -31,27 +31,64 @@ export const Route = createFileRoute("/_authenticated/dashboard/calls")({
 
 const STATUSES = ["new", "in_progress", "resolved", "needs_follow_up", "archived"];
 
+function FlagBadges({ call }: { call: Call }) {
+  const items: { label: string; cls: string; show: boolean }[] = [
+    { label: "Appt Booked", show: !!call.appointment_booked, cls: "bg-success/15 text-success border border-success/30" },
+    { label: "New Patient", show: !!call.is_new_patient, cls: "bg-info/15 text-info border border-info/30" },
+    { label: "Transferred", show: !!call.transferred, cls: "bg-warning/15 text-warning border border-warning/30" },
+    { label: "SMS Sent", show: !!call.sms_sent, cls: "bg-slate-badge text-slate-badge-foreground" },
+  ].filter((i) => i.show);
+  if (items.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {items.map((i) => (
+        <span key={i.label} className={cn("inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap", i.cls)}>
+          {i.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function CallsPage() {
   const me = useMe();
+  const isSuperAdmin = me.profile.role === "super_admin";
   const tenantId = me.tenant?.id ?? null;
-  const plan = me.tenant?.plan ?? "phone_starter";
+  const plan = me.tenant?.plan ?? "ai_front_office";
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
   const [reasonFilter, setReasonFilter] = useState<string>("all");
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [tenantFilter, setTenantFilter] = useState<string>("all");
+
+  const tenantsQ = useQuery({
+    queryKey: ["all-tenants-for-calls"],
+    enabled: isSuperAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("tenants").select("*").order("name");
+      if (error) throw error;
+      return (data ?? []) as Tenant[];
+    },
+  });
+
+  const tenantById = useMemo(() => {
+    const m: Record<string, Tenant> = {};
+    for (const t of tenantsQ.data ?? []) m[t.id] = t;
+    return m;
+  }, [tenantsQ.data]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["calls-log", tenantId],
-    enabled: !!tenantId,
+    queryKey: ["calls-log", isSuperAdmin ? "all" : tenantId],
+    enabled: isSuperAdmin || !!tenantId,
     queryFn: async () => {
       let q = supabase
         .from("calls")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(500);
-      if (tenantId) q = q.eq("tenant_id", tenantId);
+      if (!isSuperAdmin && tenantId) q = q.eq("tenant_id", tenantId);
       const { data, error } = await q.returns<Call[]>();
       if (error) throw error;
       return data ?? [];
@@ -74,6 +111,7 @@ function CallsPage() {
     if (reasonFilter !== "all" && c.call_reason !== reasonFilter) return false;
     if (outcomeFilter !== "all" && c.outcome !== outcomeFilter) return false;
     if (statusFilter !== "all" && c.status !== statusFilter) return false;
+    if (isSuperAdmin && tenantFilter !== "all" && c.tenant_id !== tenantFilter) return false;
     return true;
   });
 
@@ -83,7 +121,7 @@ function CallsPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["calls-log", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["calls-log"] });
       toast.success("Saved");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -93,7 +131,9 @@ function CallsPage() {
     <div className="flex flex-col gap-4 p-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Call Log</h1>
-        <p className="text-sm text-muted-foreground">All calls handled by your AI receptionist</p>
+        <p className="text-sm text-muted-foreground">
+          {isSuperAdmin ? "All calls across every client workspace" : "All calls handled by your AI receptionist"}
+        </p>
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -106,6 +146,17 @@ function CallsPage() {
             className="pl-9"
           />
         </div>
+        {isSuperAdmin && (
+          <Select value={tenantFilter} onValueChange={setTenantFilter}>
+            <SelectTrigger className="w-48"><SelectValue placeholder="All tenants" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tenants</SelectItem>
+              {(tenantsQ.data ?? []).map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={reasonFilter} onValueChange={setReasonFilter}>
           <SelectTrigger className="w-44"><SelectValue placeholder="All reasons" /></SelectTrigger>
           <SelectContent>
@@ -143,14 +194,15 @@ function CallsPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
+                  {isSuperAdmin && <th className="px-3 py-2 text-left font-medium">Tenant</th>}
                   <th className="px-3 py-2 text-left font-medium">Caller</th>
                   <th className="px-3 py-2 text-left font-medium">Phone</th>
                   <th className="px-3 py-2 text-left font-medium">Date</th>
                   <th className="px-3 py-2 text-left font-medium">Duration</th>
                   <th className="px-3 py-2 text-left font-medium">Reason</th>
                   <th className="px-3 py-2 text-left font-medium">Outcome</th>
-                  <th className="px-3 py-2 text-left font-medium">Journey</th>
-                  <th className="px-3 py-2 text-left font-medium">SMS</th>
+                  <th className="px-3 py-2 text-left font-medium">Tags</th>
+                  <th className="px-3 py-2 text-left font-medium">Transcript</th>
                   {canUse(plan, "lead_score") && <th className="px-3 py-2 text-left font-medium">Lead</th>}
                   <th className="px-3 py-2 text-left font-medium">Status</th>
                   <th className="px-3 py-2 text-left font-medium">Notes</th>
@@ -158,69 +210,85 @@ function CallsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c) => (
-                  <tr key={c.id} className="border-b border-border/60 hover:bg-muted/20">
-                    <td className="px-3 py-2 font-medium">{c.caller_name || "Unknown"}</td>
-                    <td className="px-3 py-2 tabular-nums text-muted-foreground">{c.caller_phone || "—"}</td>
-                    <td className="px-3 py-2 tabular-nums text-muted-foreground">
-                      {format(new Date(c.created_at), "MMM d, HH:mm")}
-                    </td>
-                    <td className="px-3 py-2 tabular-nums text-muted-foreground">
-                      {c.duration_seconds != null ? `${Math.floor(c.duration_seconds / 60)}:${String(c.duration_seconds % 60).padStart(2, "0")}` : "—"}
-                    </td>
-                    <td className="px-3 py-2"><ReasonBadge reason={c.call_reason} /></td>
-                    <td className="px-3 py-2"><OutcomeBadge outcome={c.outcome} /></td>
-                    <td className="px-3 py-2"><JourneyBadge call={c} /></td>
-                    <td className="px-3 py-2">
-                      {c.sms_sent ? <MessageSquare className="h-4 w-4 text-info" /> : <span className="text-xs text-muted-foreground">—</span>}
-                    </td>
-                    {canUse(plan, "lead_score") && (
-                      <td className="px-3 py-2"><LeadScoreBadge score={c.lead_score} /></td>
-                    )}
-                    <td className="px-3 py-2">
-                      <StatusCell
-                        value={c.status || "new"}
-                        onChange={(v) => updateMutation.mutate({ id: c.id, patch: { status: v } })}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <NotesCell
-                        initial={c.notes || ""}
-                        onSave={(v) => updateMutation.mutate({ id: c.id, patch: { notes: v } })}
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        {c.recording_url && (
-                          <a
-                            href={c.recording_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                            aria-label="Play recording"
-                          >
-                            <Play className="h-4 w-4" />
-                          </a>
+                {filtered.map((c) => {
+                  const preview = c.transcript
+                    ? c.transcript.slice(0, 100) + (c.transcript.length > 100 ? "…" : "")
+                    : "";
+                  return (
+                    <tr key={c.id} className="border-b border-border/60 hover:bg-muted/20">
+                      {isSuperAdmin && (
+                        <td className="px-3 py-2 text-xs font-medium text-muted-foreground">
+                          {tenantById[c.tenant_id]?.name ?? "—"}
+                        </td>
+                      )}
+                      <td className="px-3 py-2 font-medium">{c.caller_name || "Unknown"}</td>
+                      <td className="px-3 py-2 tabular-nums text-muted-foreground">{c.caller_phone || "—"}</td>
+                      <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                        {format(new Date(c.created_at), "MMM d, HH:mm")}
+                      </td>
+                      <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                        {c.duration_seconds != null ? `${Math.floor(c.duration_seconds / 60)}:${String(c.duration_seconds % 60).padStart(2, "0")}` : "—"}
+                      </td>
+                      <td className="px-3 py-2"><ReasonBadge reason={c.call_reason} /></td>
+                      <td className="px-3 py-2"><OutcomeBadge outcome={c.outcome} /></td>
+                      <td className="px-3 py-2"><FlagBadges call={c} /></td>
+                      <td className="px-3 py-2 max-w-[260px]">
+                        {preview ? (
+                          <span className="block truncate text-xs text-muted-foreground" title={c.transcript ?? ""}>
+                            {preview}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
-                        <Link
-                          to="/dashboard/calls/$id"
-                          params={{ id: c.id }}
-                          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                          aria-label="View"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      {canUse(plan, "lead_score") && (
+                        <td className="px-3 py-2"><LeadScoreBadge score={c.lead_score} /></td>
+                      )}
+                      <td className="px-3 py-2">
+                        <StatusCell
+                          value={c.status || "new"}
+                          onChange={(v) => updateMutation.mutate({ id: c.id, patch: { status: v } })}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <NotesCell
+                          initial={c.notes || ""}
+                          onSave={(v) => updateMutation.mutate({ id: c.id, patch: { notes: v } })}
+                        />
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="inline-flex items-center gap-1">
+                          {c.recording_url && (
+                            <a
+                              href={c.recording_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                              aria-label="Play recording"
+                            >
+                              <Play className="h-4 w-4" />
+                            </a>
+                          )}
+                          <Link
+                            to="/dashboard/calls/$id"
+                            params={{ id: c.id }}
+                            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            aria-label="View"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {!canUse(plan, "transcripts") && (
+      {!isSuperAdmin && !canUse(plan, "transcripts") && (
         <p className="text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <LockedFeature feature="transcripts" compact />
