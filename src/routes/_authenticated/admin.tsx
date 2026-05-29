@@ -27,9 +27,5 @@ function AdminLayout() {
 
   if (!profile || profile.role !== "super_admin") return null;
 
-  return (
-    <DashboardShell items={items} scopeLabel="Super Admin">
-      <Outlet />
-    </DashboardShell>
-  );
+  return <DashboardShell items={items} scopeLabel="Super Admin" />;
 }
