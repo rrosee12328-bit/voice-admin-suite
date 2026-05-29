@@ -1,81 +1,27 @@
+## Problem
 
-## Prerequisite: Connect Supabase
+In the sidebar (`src/components/app-sidebar.tsx`), the "Platform Analytics" item under the Platform section points to `to="/admin"` — the same destination as "All Clients". Clicking it appears to do nothing because you're already on `/admin`. There is also no `/admin/analytics` route file, so even a corrected link would 404.
 
-The project does not yet have a Supabase client (`src/integrations/supabase/` is missing). Before building, I'll enable the Supabase integration so the existing project (with `tenants`, `profiles`, `calls`) is wired up. No tables or migrations will be created — read-only usage of your existing schema.
+## Plan
 
-If you'd rather paste your Supabase URL + publishable key manually instead of using the integration, let me know.
+1. **Create `src/routes/_authenticated/admin.analytics.tsx`**
+   - New route at `/admin/analytics`, super-admin only (redirect non-super to `/dashboard`).
+   - Aggregate platform-wide stats from existing tables:
+     - Total clients (tenants count)
+     - Active clients (subscription status active)
+     - Total calls this month
+     - Total minutes used this month
+     - Appointments booked this month
+   - Render with the existing `StatCard` component and a simple recent-activity list, matching the look of `admin.index.tsx`.
+   - Standard `head()` with route-specific title/description.
 
-## Design system
+2. **Fix the sidebar link in `src/components/app-sidebar.tsx`**
+   - Change the Platform Analytics `<Link>` from `to="/admin"` to `to="/admin/analytics"`.
+   - Keep the `isActive("/admin/analytics")` check (already correct).
 
-- Dark theme only. Tokens added to `src/styles.css`:
-  - `--background: #0A0F1E`, `--primary: #2563EB`, surfaces/borders tuned for premium dark SaaS
-  - Inter loaded via Google Fonts in `__root.tsx` head
-- All components use semantic tokens (no hard-coded hex in JSX)
+3. **No schema, RLS, or auth changes** — reuses existing tenant/call/appointment tables and the `_authenticated` guard.
 
-## Auth & routing
+## Technical notes
 
-- `src/routes/login.tsx` — email/password Supabase auth (signInWithPassword)
-- Router context exposes `auth` (session + profile with role + tenant_id)
-- `src/routes/__root.tsx` registers single `onAuthStateChange` listener; invalidates router + query cache
-- `_authenticated.tsx` layout: `beforeLoad` redirects to `/login` if no session; fetches profile once via server fn, exposes role
-- Role-based redirect on `/`:
-  - `super_admin` → `/admin/dashboard`
-  - `client_admin` → `/app/dashboard`
-
-## Route tree
-
-```
-routes/
-  __root.tsx
-  index.tsx                       # redirect by role
-  login.tsx
-  _authenticated.tsx              # session gate + profile load
-  _authenticated/_admin.tsx       # role === 'super_admin' gate + AdminSidebar
-  _authenticated/_admin/dashboard.tsx
-  _authenticated/_admin/clients.tsx
-  _authenticated/_admin/clients.$tenantId.tsx   # client's call log
-  _authenticated/_admin/billing.tsx
-  _authenticated/_admin/settings.tsx
-  _authenticated/_client.tsx      # role === 'client_admin' gate + ClientSidebar
-  _authenticated/_client/dashboard.tsx
-  _authenticated/_client/calls.tsx
-  _authenticated/_client/calls.$callId.tsx      # transcript dialog/page
-  _authenticated/_client/usage.tsx
-  _authenticated/_client/settings.tsx
-```
-
-## Data access
-
-All reads via `createServerFn` + `requireSupabaseAuth` (RLS-scoped). Files under `src/lib/`:
-
-- `profile.functions.ts` — `getMyProfile()`
-- `admin.functions.ts` — `getAdminStats()` (clients count, calls this month, MRR derived from plan, total minutes), `listTenants()`, `getTenantCalls(tenantId)`
-- `client.functions.ts` — `getClientDashboard()` (today / this week / appointments booked from `calls` scoped to tenant), `listMyCalls()`, `getMyUsage()` (from `tenants` row), `getCall(id)`
-
-TanStack Query wires each loader via `ensureQueryData` + `useSuspenseQuery`.
-
-## Views
-
-**Super Admin**
-- Sidebar: Dashboard, Clients, Billing, Settings (shadcn `Sidebar`, collapsible icon)
-- Dashboard: 4 stat cards (total clients, calls this month, MRR, platform minutes used)
-- Clients: shadcn `Table` with name / plan / `minutes_used/minutes_included` / `stripe_subscription_status` / `created_at`; row click → `/admin/clients/$tenantId` showing that tenant's calls table
-- Billing & Settings: placeholder cards (no schema for billing details in scope)
-
-**Client**
-- Sidebar: Dashboard, Calls, Usage, Settings
-- Dashboard: stat cards (today's calls, this week's calls, appointments booked)
-- Calls: table (caller_name, caller_phone, call_reason, outcome, appointment_booked badge, duration formatted m:ss, started_at); row opens transcript dialog with recording player if `recording_url`
-- Usage: minutes used / included with `Progress` bar
-  - color via token classes: <80% primary blue, 80–99% amber, ≥100% red
-  - Overage warning `Alert` when used > included
-  - "Resets on 1st of next month" helper text
-- Settings: shows `full_name` + `email` from profile, "Manage Billing" button (disabled stub for now; can wire to Stripe portal later)
-
-## Notes / open questions
-
-- MRR calc: I'll derive from `tenants.plan` using a simple plan→price map in code. If you want exact MRR, we should pull from Stripe later.
-- "Manage Billing" button: stub now, or wire to a `createServerFn` that opens a Stripe Customer Portal session? (Needs `STRIPE_SECRET_KEY`.)
-- No new tables, no migrations, no Prisma/Drizzle — confirmed.
-
-After you approve, I'll switch to build mode and implement in this order: Supabase connect → tokens/fonts → auth + layouts → admin views → client views.
+- Route ID string must be `"/_authenticated/admin/analytics"` to match the filename `admin.analytics.tsx`.
+- Data fetched via the existing `supabase` client inside a `useQuery` (same pattern as `admin.index.tsx`), no new server functions needed.
