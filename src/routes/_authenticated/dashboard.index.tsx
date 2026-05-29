@@ -334,7 +334,12 @@ export function DashboardView({
       <div className="text-xs text-muted-foreground">
         <button
           className="underline-offset-2 hover:underline"
-          onClick={() => navigate({ to: "/dashboard/calls" })}
+          onClick={() =>
+            navigate({
+              to: "/dashboard/calls",
+              search: tenantId ? { tenantId } : {},
+            })
+          }
         >
           View full call log →
         </button>
