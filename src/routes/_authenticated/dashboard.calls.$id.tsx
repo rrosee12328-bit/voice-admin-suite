@@ -11,9 +11,9 @@ import { canUse } from "@/lib/plan-gating";
 import {
   OutcomeBadge,
   ReasonBadge,
-  JourneyBadge,
   LeadScoreBadge,
 } from "@/components/badges";
+
 import { LockedFeature } from "@/components/locked-feature";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
