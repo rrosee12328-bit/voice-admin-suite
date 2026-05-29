@@ -9,19 +9,19 @@ export type Plan =
 export type Tenant = {
   id: string;
   name: string;
-  slug?: string | null;
-  plan: Plan | null;
-  client_number?: string | null;
+  slug: string | null;
+  plan: Plan;
+  client_number: string | null;
   minutes_used_this_month: number | null;
   minutes_included: number | null;
   stripe_subscription_status: string | null;
   stripe_customer_id: string | null;
-  agent_status?: string | null;
-  retell_phone_number?: string | null;
-  branding_logo_url?: string | null;
-  branding_name?: string | null;
-  branding_primary_color?: string | null;
-  created_at?: string;
+  agent_status: string | null;
+  retell_phone_number: string | null;
+  branding_logo_url: string | null;
+  branding_name: string | null;
+  branding_primary_color: string | null;
+  created_at: string;
 };
 
 export type Profile = {
@@ -29,7 +29,7 @@ export type Profile = {
   tenant_id: string | null;
   role: Role;
   full_name: string | null;
-  name?: string | null;
+  name: string | null;
   email: string | null;
 };
 
@@ -47,23 +47,23 @@ export type Call = {
   transcript: string | null;
   recording_url: string | null;
   started_at: string;
-  created_at?: string;
+  created_at: string;
   status: string | null;
-  notes?: string | null;
-  lead_score?: number | null;
-  sms_sent?: boolean | null;
-  sms_message?: string | null;
+  notes: string | null;
+  lead_score: number | null;
+  sms_sent: boolean | null;
+  sms_message: string | null;
 };
 
 export type Invoice = {
   id: string;
   tenant_id: string;
   invoice_number: string | null;
-  amount_cents: number | null;
+  amount_cents: number;
   currency: string | null;
   status: string | null;
   period_start: string | null;
   period_end: string | null;
   pdf_url: string | null;
-  created_at?: string;
+  created_at: string;
 };
