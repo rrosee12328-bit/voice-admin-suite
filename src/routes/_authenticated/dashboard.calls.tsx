@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Search, Play, ExternalLink } from "lucide-react";
@@ -51,6 +51,12 @@ function FlagBadges({ call }: { call: Call }) {
 }
 
 function CallsPage() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (pathname !== "/dashboard/calls") {
+    return <Outlet />;
+  }
+
   const me = useMe();
   const isSuperAdmin = me.profile.role === "super_admin";
   const tenantId = me.tenant?.id ?? null;
