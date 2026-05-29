@@ -9,21 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedAppUsageRouteImport } from './routes/_authenticated/app/usage'
-import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app/settings'
-import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/app/dashboard'
-import { Route as AuthenticatedAppCallsRouteImport } from './routes/_authenticated/app/calls'
-import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
-import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
-import { Route as AuthenticatedAdminClientsRouteImport } from './routes/_authenticated/admin/clients'
-import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin/billing'
-import { Route as AuthenticatedAdminClientsTenantIdRouteImport } from './routes/_authenticated/admin/clients.$tenantId'
+import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard.index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_authenticated/dashboard.settings'
+import { Route as AuthenticatedDashboardCallsRouteImport } from './routes/_authenticated/dashboard.calls'
+import { Route as AuthenticatedDashboardBillingRouteImport } from './routes/_authenticated/dashboard.billing'
+import { Route as AuthenticatedDashboardAnalyticsRouteImport } from './routes/_authenticated/dashboard.analytics'
+import { Route as AuthenticatedDashboardCallsIdRouteImport } from './routes/_authenticated/dashboard.calls.$id'
+import { Route as AuthenticatedAdminClientsSlugRouteImport } from './routes/_authenticated/admin.clients.$slug'
 
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -38,9 +43,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
-  id: '/app',
-  path: '/app',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -48,163 +53,162 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAppUsageRoute = AuthenticatedAppUsageRouteImport.update({
-  id: '/usage',
-  path: '/usage',
-  getParentRoute: () => AuthenticatedAppRoute,
+const AuthenticatedDashboardIndexRoute =
+  AuthenticatedDashboardIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
-const AuthenticatedAppSettingsRoute =
-  AuthenticatedAppSettingsRouteImport.update({
+const AuthenticatedDashboardSettingsRoute =
+  AuthenticatedDashboardSettingsRouteImport.update({
     id: '/settings',
     path: '/settings',
-    getParentRoute: () => AuthenticatedAppRoute,
+    getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
-const AuthenticatedAppDashboardRoute =
-  AuthenticatedAppDashboardRouteImport.update({
-    id: '/dashboard',
-    path: '/dashboard',
-    getParentRoute: () => AuthenticatedAppRoute,
+const AuthenticatedDashboardCallsRoute =
+  AuthenticatedDashboardCallsRouteImport.update({
+    id: '/calls',
+    path: '/calls',
+    getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
-const AuthenticatedAppCallsRoute = AuthenticatedAppCallsRouteImport.update({
-  id: '/calls',
-  path: '/calls',
-  getParentRoute: () => AuthenticatedAppRoute,
-} as any)
-const AuthenticatedAdminSettingsRoute =
-  AuthenticatedAdminSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminDashboardRoute =
-  AuthenticatedAdminDashboardRouteImport.update({
-    id: '/dashboard',
-    path: '/dashboard',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminClientsRoute =
-  AuthenticatedAdminClientsRouteImport.update({
-    id: '/clients',
-    path: '/clients',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminBillingRoute =
-  AuthenticatedAdminBillingRouteImport.update({
+const AuthenticatedDashboardBillingRoute =
+  AuthenticatedDashboardBillingRouteImport.update({
     id: '/billing',
     path: '/billing',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
-const AuthenticatedAdminClientsTenantIdRoute =
-  AuthenticatedAdminClientsTenantIdRouteImport.update({
-    id: '/$tenantId',
-    path: '/$tenantId',
-    getParentRoute: () => AuthenticatedAdminClientsRoute,
+const AuthenticatedDashboardAnalyticsRoute =
+  AuthenticatedDashboardAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardCallsIdRoute =
+  AuthenticatedDashboardCallsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedDashboardCallsRoute,
+  } as any)
+const AuthenticatedAdminClientsSlugRoute =
+  AuthenticatedAdminClientsSlugRouteImport.update({
+    id: '/clients/$slug',
+    path: '/clients/$slug',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/pricing': typeof PricingRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
-  '/app': typeof AuthenticatedAppRouteWithChildren
-  '/admin/billing': typeof AuthenticatedAdminBillingRoute
-  '/admin/clients': typeof AuthenticatedAdminClientsRouteWithChildren
-  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
-  '/app/calls': typeof AuthenticatedAppCallsRoute
-  '/app/dashboard': typeof AuthenticatedAppDashboardRoute
-  '/app/settings': typeof AuthenticatedAppSettingsRoute
-  '/app/usage': typeof AuthenticatedAppUsageRoute
-  '/admin/clients/$tenantId': typeof AuthenticatedAdminClientsTenantIdRoute
+  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
+  '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
+  '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
+  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
+  '/dashboard/calls/$id': typeof AuthenticatedDashboardCallsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
-  '/app': typeof AuthenticatedAppRouteWithChildren
-  '/admin/billing': typeof AuthenticatedAdminBillingRoute
-  '/admin/clients': typeof AuthenticatedAdminClientsRouteWithChildren
-  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
-  '/app/calls': typeof AuthenticatedAppCallsRoute
-  '/app/dashboard': typeof AuthenticatedAppDashboardRoute
-  '/app/settings': typeof AuthenticatedAppSettingsRoute
-  '/app/usage': typeof AuthenticatedAppUsageRoute
-  '/admin/clients/$tenantId': typeof AuthenticatedAdminClientsTenantIdRoute
+  '/pricing': typeof PricingRoute
+  '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
+  '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
+  '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
+  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/dashboard': typeof AuthenticatedDashboardIndexRoute
+  '/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
+  '/dashboard/calls/$id': typeof AuthenticatedDashboardCallsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/pricing': typeof PricingRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
-  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
-  '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
-  '/_authenticated/admin/clients': typeof AuthenticatedAdminClientsRouteWithChildren
-  '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
-  '/_authenticated/app/calls': typeof AuthenticatedAppCallsRoute
-  '/_authenticated/app/dashboard': typeof AuthenticatedAppDashboardRoute
-  '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRoute
-  '/_authenticated/app/usage': typeof AuthenticatedAppUsageRoute
-  '/_authenticated/admin/clients/$tenantId': typeof AuthenticatedAdminClientsTenantIdRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
+  '/_authenticated/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
+  '/_authenticated/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
+  '/_authenticated/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/_authenticated/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
+  '/_authenticated/dashboard/calls/$id': typeof AuthenticatedDashboardCallsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/login'
+    | '/pricing'
     | '/admin'
-    | '/app'
-    | '/admin/billing'
-    | '/admin/clients'
-    | '/admin/dashboard'
-    | '/admin/settings'
-    | '/app/calls'
-    | '/app/dashboard'
-    | '/app/settings'
-    | '/app/usage'
-    | '/admin/clients/$tenantId'
+    | '/dashboard'
+    | '/dashboard/analytics'
+    | '/dashboard/billing'
+    | '/dashboard/calls'
+    | '/dashboard/settings'
+    | '/admin/'
+    | '/dashboard/'
+    | '/admin/clients/$slug'
+    | '/dashboard/calls/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/pricing'
+    | '/dashboard/analytics'
+    | '/dashboard/billing'
+    | '/dashboard/calls'
+    | '/dashboard/settings'
     | '/admin'
-    | '/app'
-    | '/admin/billing'
-    | '/admin/clients'
-    | '/admin/dashboard'
-    | '/admin/settings'
-    | '/app/calls'
-    | '/app/dashboard'
-    | '/app/settings'
-    | '/app/usage'
-    | '/admin/clients/$tenantId'
+    | '/dashboard'
+    | '/admin/clients/$slug'
+    | '/dashboard/calls/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/pricing'
     | '/_authenticated/admin'
-    | '/_authenticated/app'
-    | '/_authenticated/admin/billing'
-    | '/_authenticated/admin/clients'
-    | '/_authenticated/admin/dashboard'
-    | '/_authenticated/admin/settings'
-    | '/_authenticated/app/calls'
-    | '/_authenticated/app/dashboard'
-    | '/_authenticated/app/settings'
-    | '/_authenticated/app/usage'
-    | '/_authenticated/admin/clients/$tenantId'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/dashboard/analytics'
+    | '/_authenticated/dashboard/billing'
+    | '/_authenticated/dashboard/calls'
+    | '/_authenticated/dashboard/settings'
+    | '/_authenticated/admin/'
+    | '/_authenticated/dashboard/'
+    | '/_authenticated/admin/clients/$slug'
+    | '/_authenticated/dashboard/calls/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  PricingRoute: typeof PricingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -226,11 +230,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/app': {
-      id: '/_authenticated/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AuthenticatedAppRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin': {
@@ -240,129 +244,123 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/app/usage': {
-      id: '/_authenticated/app/usage'
-      path: '/usage'
-      fullPath: '/app/usage'
-      preLoaderRoute: typeof AuthenticatedAppUsageRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
+    '/_authenticated/dashboard/': {
+      id: '/_authenticated/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthenticatedDashboardIndexRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
     }
-    '/_authenticated/app/settings': {
-      id: '/_authenticated/app/settings'
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/dashboard/settings': {
+      id: '/_authenticated/dashboard/settings'
       path: '/settings'
-      fullPath: '/app/settings'
-      preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof AuthenticatedDashboardSettingsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
     }
-    '/_authenticated/app/dashboard': {
-      id: '/_authenticated/app/dashboard'
-      path: '/dashboard'
-      fullPath: '/app/dashboard'
-      preLoaderRoute: typeof AuthenticatedAppDashboardRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
-    '/_authenticated/app/calls': {
-      id: '/_authenticated/app/calls'
+    '/_authenticated/dashboard/calls': {
+      id: '/_authenticated/dashboard/calls'
       path: '/calls'
-      fullPath: '/app/calls'
-      preLoaderRoute: typeof AuthenticatedAppCallsRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
+      fullPath: '/dashboard/calls'
+      preLoaderRoute: typeof AuthenticatedDashboardCallsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
     }
-    '/_authenticated/admin/settings': {
-      id: '/_authenticated/admin/settings'
-      path: '/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/dashboard': {
-      id: '/_authenticated/admin/dashboard'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/clients': {
-      id: '/_authenticated/admin/clients'
-      path: '/clients'
-      fullPath: '/admin/clients'
-      preLoaderRoute: typeof AuthenticatedAdminClientsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/billing': {
-      id: '/_authenticated/admin/billing'
+    '/_authenticated/dashboard/billing': {
+      id: '/_authenticated/dashboard/billing'
       path: '/billing'
-      fullPath: '/admin/billing'
-      preLoaderRoute: typeof AuthenticatedAdminBillingRouteImport
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof AuthenticatedDashboardBillingRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/analytics': {
+      id: '/_authenticated/dashboard/analytics'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof AuthenticatedDashboardAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/calls/$id': {
+      id: '/_authenticated/dashboard/calls/$id'
+      path: '/$id'
+      fullPath: '/dashboard/calls/$id'
+      preLoaderRoute: typeof AuthenticatedDashboardCallsIdRouteImport
+      parentRoute: typeof AuthenticatedDashboardCallsRoute
+    }
+    '/_authenticated/admin/clients/$slug': {
+      id: '/_authenticated/admin/clients/$slug'
+      path: '/clients/$slug'
+      fullPath: '/admin/clients/$slug'
+      preLoaderRoute: typeof AuthenticatedAdminClientsSlugRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/admin/clients/$tenantId': {
-      id: '/_authenticated/admin/clients/$tenantId'
-      path: '/$tenantId'
-      fullPath: '/admin/clients/$tenantId'
-      preLoaderRoute: typeof AuthenticatedAdminClientsTenantIdRouteImport
-      parentRoute: typeof AuthenticatedAdminClientsRoute
-    }
   }
 }
-
-interface AuthenticatedAdminClientsRouteChildren {
-  AuthenticatedAdminClientsTenantIdRoute: typeof AuthenticatedAdminClientsTenantIdRoute
-}
-
-const AuthenticatedAdminClientsRouteChildren: AuthenticatedAdminClientsRouteChildren =
-  {
-    AuthenticatedAdminClientsTenantIdRoute:
-      AuthenticatedAdminClientsTenantIdRoute,
-  }
-
-const AuthenticatedAdminClientsRouteWithChildren =
-  AuthenticatedAdminClientsRoute._addFileChildren(
-    AuthenticatedAdminClientsRouteChildren,
-  )
 
 interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
-  AuthenticatedAdminClientsRoute: typeof AuthenticatedAdminClientsRouteWithChildren
-  AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
-  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminClientsSlugRoute: typeof AuthenticatedAdminClientsSlugRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
-  AuthenticatedAdminClientsRoute: AuthenticatedAdminClientsRouteWithChildren,
-  AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
-  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminClientsSlugRoute: AuthenticatedAdminClientsSlugRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
-interface AuthenticatedAppRouteChildren {
-  AuthenticatedAppCallsRoute: typeof AuthenticatedAppCallsRoute
-  AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
-  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
-  AuthenticatedAppUsageRoute: typeof AuthenticatedAppUsageRoute
+interface AuthenticatedDashboardCallsRouteChildren {
+  AuthenticatedDashboardCallsIdRoute: typeof AuthenticatedDashboardCallsIdRoute
 }
 
-const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
-  AuthenticatedAppCallsRoute: AuthenticatedAppCallsRoute,
-  AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
-  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
-  AuthenticatedAppUsageRoute: AuthenticatedAppUsageRoute,
+const AuthenticatedDashboardCallsRouteChildren: AuthenticatedDashboardCallsRouteChildren =
+  {
+    AuthenticatedDashboardCallsIdRoute: AuthenticatedDashboardCallsIdRoute,
+  }
+
+const AuthenticatedDashboardCallsRouteWithChildren =
+  AuthenticatedDashboardCallsRoute._addFileChildren(
+    AuthenticatedDashboardCallsRouteChildren,
+  )
+
+interface AuthenticatedDashboardRouteChildren {
+  AuthenticatedDashboardAnalyticsRoute: typeof AuthenticatedDashboardAnalyticsRoute
+  AuthenticatedDashboardBillingRoute: typeof AuthenticatedDashboardBillingRoute
+  AuthenticatedDashboardCallsRoute: typeof AuthenticatedDashboardCallsRouteWithChildren
+  AuthenticatedDashboardSettingsRoute: typeof AuthenticatedDashboardSettingsRoute
+  AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
 }
 
-const AuthenticatedAppRouteWithChildren =
-  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
+const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
+  {
+    AuthenticatedDashboardAnalyticsRoute: AuthenticatedDashboardAnalyticsRoute,
+    AuthenticatedDashboardBillingRoute: AuthenticatedDashboardBillingRoute,
+    AuthenticatedDashboardCallsRoute:
+      AuthenticatedDashboardCallsRouteWithChildren,
+    AuthenticatedDashboardSettingsRoute: AuthenticatedDashboardSettingsRoute,
+    AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
+  }
+
+const AuthenticatedDashboardRouteWithChildren =
+  AuthenticatedDashboardRoute._addFileChildren(
+    AuthenticatedDashboardRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
-  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
-  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -373,7 +371,18 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  PricingRoute: PricingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
