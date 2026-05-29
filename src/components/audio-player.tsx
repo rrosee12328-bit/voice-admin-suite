@@ -101,9 +101,11 @@ export function AudioPlayer({ src, className }: Props) {
         src={src}
         preload="metadata"
         controlsList="nodownload noplaybackrate"
+        // @ts-expect-error - valid HTML attribute, not typed in React
         disablePictureInPicture
         className="hidden"
       />
+
 
       {/* Scrubber */}
       <div
