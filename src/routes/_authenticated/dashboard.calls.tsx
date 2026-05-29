@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Search, Play, ExternalLink } from "lucide-react";
@@ -26,7 +26,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard/calls")({
-  component: CallsPage,
+  validateSearch: (search) => ({
+    tenantId: typeof search.tenantId === "string" ? search.tenantId : undefined,
+  }),
+  component: CallsRoute,
 });
 
 const STATUSES = ["new", "in_progress", "resolved", "needs_follow_up", "archived"];
@@ -50,9 +53,21 @@ function FlagBadges({ call }: { call: Call }) {
   );
 }
 
+function CallsRoute() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (pathname !== "/dashboard/calls") {
+    return <Outlet />;
+  }
+
+  return <CallsPage />;
+}
+
 function CallsPage() {
+
   const me = useMe();
   const isSuperAdmin = me.profile.role === "super_admin";
+  const { tenantId: tenantFromUrl } = Route.useSearch();
   const tenantId = me.tenant?.id ?? null;
   const plan = me.tenant?.plan ?? "ai_front_office";
   const queryClient = useQueryClient();
@@ -61,7 +76,7 @@ function CallsPage() {
   const [reasonFilter, setReasonFilter] = useState<string>("all");
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [tenantFilter, setTenantFilter] = useState<string>("all");
+  const [tenantFilter, setTenantFilter] = useState<string>(tenantFromUrl ?? "all");
 
   const tenantsQ = useQuery({
     queryKey: ["all-tenants-for-calls"],
