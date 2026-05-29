@@ -26,6 +26,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard/calls")({
+  validateSearch: (search) => ({
+    tenantId: typeof search.tenantId === "string" ? search.tenantId : undefined,
+  }),
   component: CallsRoute,
 });
 
@@ -64,6 +67,7 @@ function CallsPage() {
 
   const me = useMe();
   const isSuperAdmin = me.profile.role === "super_admin";
+  const { tenantId: tenantFromUrl } = Route.useSearch();
   const tenantId = me.tenant?.id ?? null;
   const plan = me.tenant?.plan ?? "ai_front_office";
   const queryClient = useQueryClient();
@@ -72,7 +76,7 @@ function CallsPage() {
   const [reasonFilter, setReasonFilter] = useState<string>("all");
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [tenantFilter, setTenantFilter] = useState<string>("all");
+  const [tenantFilter, setTenantFilter] = useState<string>(tenantFromUrl ?? "all");
 
   const tenantsQ = useQuery({
     queryKey: ["all-tenants-for-calls"],
