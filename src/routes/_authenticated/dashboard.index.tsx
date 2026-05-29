@@ -29,12 +29,17 @@ import { StatusDot } from "@/components/badges";
 import { EmptyState } from "@/components/empty-state";
 import { UsageWidget } from "@/components/usage-widget";
 
+import { SuperAdminDashboard } from "@/components/super-admin-dashboard";
+
 export const Route = createFileRoute("/_authenticated/dashboard/")({
   component: DashboardHome,
 });
 
 function DashboardHome() {
   const me = useMe();
+  if (me.profile.role === "super_admin") {
+    return <SuperAdminDashboard />;
+  }
   const tenantId = me.tenant?.id;
   return (
     <DashboardView
@@ -47,6 +52,7 @@ function DashboardHome() {
     />
   );
 }
+
 
 export function DashboardView({
   tenantId,
