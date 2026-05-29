@@ -11,9 +11,9 @@ import { canUse } from "@/lib/plan-gating";
 import {
   OutcomeBadge,
   ReasonBadge,
-  JourneyBadge,
   LeadScoreBadge,
 } from "@/components/badges";
+
 import { LockedFeature } from "@/components/locked-feature";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -112,19 +112,39 @@ function CallDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
           <div className="rounded-lg border border-border bg-card p-5">
-            <h2 className="mb-3 text-sm font-semibold">Call summary</h2>
+            <h2 className="mb-3 text-sm font-semibold">Patient Info</h2>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Caller name</dt>
+                <dd className="mt-1 font-medium">{call.caller_name || "Unknown"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Phone</dt>
+                <dd className="mt-1 tabular-nums">{call.caller_phone || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">New patient</dt>
+                <dd className="mt-1">
+                  {call.is_new_patient ? (
+                    <span className="inline-flex rounded-md border border-info/30 bg-info/15 px-2 py-0.5 text-xs font-medium text-info">New Patient</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Returning / unknown</span>
+                  )}
+                </dd>
+              </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Reason</dt>
                 <dd className="mt-1"><ReasonBadge reason={call.call_reason} /></dd>
               </div>
+            </dl>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-5">
+            <h2 className="mb-3 text-sm font-semibold">Outcome</h2>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div>
                 <dt className="text-xs text-muted-foreground">Outcome</dt>
                 <dd className="mt-1"><OutcomeBadge outcome={call.outcome} /></dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">Journey</dt>
-                <dd className="mt-1"><JourneyBadge call={call} /></dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Duration</dt>
@@ -134,18 +154,45 @@ function CallDetailPage() {
                     : "—"}
                 </dd>
               </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Appointment</dt>
+                <dd className="mt-1">
+                  {call.appointment_booked ? (
+                    <span className="inline-flex rounded-md border border-success/30 bg-success/15 px-2 py-0.5 text-xs font-medium text-success">Appt Booked</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Not booked</span>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Transferred</dt>
+                <dd className="mt-1">
+                  {call.transferred ? (
+                    <span className="inline-flex rounded-md border border-warning/30 bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">Transferred</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No</span>
+                  )}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-xs text-muted-foreground">SMS</dt>
+                <dd className="mt-1">
+                  {call.sms_sent ? (
+                    <div className="space-y-2">
+                      <span className="inline-flex rounded-md bg-slate-badge px-2 py-0.5 text-xs font-medium text-slate-badge-foreground">SMS Sent</span>
+                      {call.sms_message && (
+                        <div className="rounded-md border border-border bg-muted/30 p-2 text-xs">{call.sms_message}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No SMS sent</span>
+                  )}
+                </dd>
+              </div>
               {canUse(plan, "lead_score") && (
                 <div>
                   <dt className="text-xs text-muted-foreground">Lead score</dt>
                   <dd className="mt-1"><LeadScoreBadge score={call.lead_score} /></dd>
-                </div>
-              )}
-              {call.sms_sent && (
-                <div className="col-span-2">
-                  <dt className="text-xs text-muted-foreground">SMS sent</dt>
-                  <dd className="mt-1 rounded-md border border-border bg-muted/30 p-2 text-xs">
-                    {call.sms_message || "Sent"}
-                  </dd>
                 </div>
               )}
             </dl>
@@ -159,7 +206,7 @@ function CallDetailPage() {
           )}
 
           <div className="rounded-lg border border-border bg-card p-5">
-            <h2 className="mb-3 text-sm font-semibold">Transcript</h2>
+            <h2 className="mb-3 text-sm font-semibold">Full Transcript</h2>
             {canUse(plan, "transcripts") ? (
               call.transcript ? (
                 <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed">
@@ -173,6 +220,7 @@ function CallDetailPage() {
             )}
           </div>
         </div>
+
 
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-card p-5">

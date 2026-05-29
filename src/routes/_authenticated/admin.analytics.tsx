@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Phone, DollarSign, Calendar, Activity } from "lucide-react";
+import { Users, Phone, DollarSign, Calendar, Activity, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tenant } from "@/integrations/supabase/app-types";
+import type { Tenant, Call } from "@/integrations/supabase/app-types";
 import { PLAN_PRICE, PLAN_LABEL } from "@/lib/plan-gating";
+import { PlanBadge } from "@/components/badges";
+import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   head: () => ({
@@ -47,6 +50,18 @@ function PlatformAnalytics() {
     },
   });
 
+  const monthCallsQ = useQuery({
+    queryKey: ["platform-analytics-calls-rows", since],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("calls")
+        .select("tenant_id, duration_seconds")
+        .gte("created_at", since);
+      if (error) throw error;
+      return (data ?? []) as Pick<Call, "tenant_id" | "duration_seconds">[];
+    },
+  });
+
   const recentCallsQ = useQuery({
     queryKey: ["platform-analytics-recent-calls"],
     queryFn: async () => {
@@ -68,11 +83,24 @@ function PlatformAnalytics() {
   const tenantById: Record<string, Tenant> = {};
   for (const t of tenants) tenantById[t.id] = t;
 
+  // Per-tenant aggregates from this month's calls
+  const perTenant: Record<string, { calls: number; seconds: number }> = {};
+  for (const c of monthCallsQ.data ?? []) {
+    const t = perTenant[c.tenant_id] || { calls: 0, seconds: 0 };
+    t.calls += 1;
+    t.seconds += c.duration_seconds ?? 0;
+    perTenant[c.tenant_id] = t;
+  }
+  const totalMinutes = Math.round(
+    Object.values(perTenant).reduce((s, t) => s + t.seconds, 0) / 60,
+  );
+
   const planBreakdown = tenants.reduce<Record<string, number>>((acc, t) => {
     const k = t.plan || "unknown";
     acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {});
+
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -81,16 +109,62 @@ function PlatformAnalytics() {
         <p className="text-sm text-muted-foreground">Aggregated usage and revenue across all clients</p>
       </header>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatBar label="Total Clients" value={totalClients} icon={<Users className="h-4 w-4" />} />
         <StatBar label="Active Agents" value={activeClients} icon={<Activity className="h-4 w-4" />} />
         <StatBar label="Calls This Month" value={callsQ.data ?? "—"} icon={<Phone className="h-4 w-4" />} />
+        <StatBar label="Minutes This Month" value={totalMinutes.toLocaleString()} icon={<Clock className="h-4 w-4" />} />
         <StatBar
           label="MRR"
           value={`$${mrr.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
           icon={<DollarSign className="h-4 w-4" />}
         />
       </section>
+
+      <section className="rounded-lg border border-border bg-card">
+        <div className="border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold">Per-tenant usage this month</h2>
+          <p className="text-xs text-muted-foreground">Tenants over their minute limit are highlighted in red.</p>
+        </div>
+        {tenants.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">No clients yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 text-left font-medium">Tenant</th>
+                  <th className="px-4 py-2 text-left font-medium">Plan</th>
+                  <th className="px-4 py-2 text-left font-medium">Minutes</th>
+                  <th className="px-4 py-2 text-left font-medium">Calls</th>
+                  <th className="px-4 py-2 text-left font-medium">Subscription</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tenants.map((t) => {
+                  const agg = perTenant[t.id] ?? { calls: 0, seconds: 0 };
+                  const minutesUsed = t.minutes_used_this_month ?? Math.round(agg.seconds / 60);
+                  const minutesIncl = t.minutes_included ?? 0;
+                  const over = minutesIncl > 0 && minutesUsed > minutesIncl;
+                  return (
+                    <tr key={t.id} className={cn("border-b border-border/60", over && "bg-destructive/10")}>
+                      <td className="px-4 py-3 font-medium">{t.name}</td>
+                      <td className="px-4 py-3"><PlanBadge plan={t.plan} /></td>
+                      <td className={cn("px-4 py-3 tabular-nums", over ? "font-semibold text-destructive" : "text-muted-foreground")}>
+                        {minutesUsed.toLocaleString()} / {minutesIncl > 0 ? minutesIncl.toLocaleString() : "∞"}
+                        {over && <span className="ml-2 text-[10px] uppercase tracking-wider">Over limit</span>}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-muted-foreground">{agg.calls}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{t.stripe_subscription_status || "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-border bg-card">
