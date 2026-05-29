@@ -16,6 +16,11 @@ export type Tenant = {
   minutes_included: number | null;
   stripe_subscription_status: string | null;
   stripe_customer_id: string | null;
+  agent_status?: string | null;
+  retell_phone_number?: string | null;
+  branding_logo_url?: string | null;
+  branding_name?: string | null;
+  branding_primary_color?: string | null;
   created_at?: string;
 };
 
@@ -24,6 +29,7 @@ export type Profile = {
   tenant_id: string | null;
   role: Role;
   full_name: string | null;
+  name?: string | null;
   email: string | null;
 };
 
@@ -41,7 +47,12 @@ export type Call = {
   transcript: string | null;
   recording_url: string | null;
   started_at: string;
+  created_at?: string;
   status: string | null;
+  notes?: string | null;
+  lead_score?: number | null;
+  sms_sent?: boolean | null;
+  sms_message?: string | null;
 };
 
 export type Invoice = {
