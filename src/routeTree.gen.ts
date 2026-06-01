@@ -25,6 +25,7 @@ import { Route as AuthenticatedDashboardAnalyticsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminIntakeRouteImport } from './routes/_authenticated/admin.intake'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedDashboardCallsIdRouteImport } from './routes/_authenticated/dashboard.calls.$id'
+import { Route as AuthenticatedAdminIntakeIdRouteImport } from './routes/_authenticated/admin.intake.$id'
 import { Route as AuthenticatedAdminClientsSlugRouteImport } from './routes/_authenticated/admin.clients.$slug'
 
 const PricingRoute = PricingRouteImport.update({
@@ -114,6 +115,12 @@ const AuthenticatedDashboardCallsIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedDashboardCallsRoute,
   } as any)
+const AuthenticatedAdminIntakeIdRoute =
+  AuthenticatedAdminIntakeIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedAdminIntakeRoute,
+  } as any)
 const AuthenticatedAdminClientsSlugRoute =
   AuthenticatedAdminClientsSlugRouteImport.update({
     id: '/clients/$slug',
@@ -129,7 +136,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/intake/$token': typeof IntakeTokenRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
-  '/admin/intake': typeof AuthenticatedAdminIntakeRoute
+  '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -137,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
+  '/admin/intake/$id': typeof AuthenticatedAdminIntakeIdRoute
   '/dashboard/calls/$id': typeof AuthenticatedDashboardCallsIdRoute
 }
 export interface FileRoutesByTo {
@@ -145,7 +153,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/intake/$token': typeof IntakeTokenRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
-  '/admin/intake': typeof AuthenticatedAdminIntakeRoute
+  '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -153,6 +161,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
+  '/admin/intake/$id': typeof AuthenticatedAdminIntakeIdRoute
   '/dashboard/calls/$id': typeof AuthenticatedDashboardCallsIdRoute
 }
 export interface FileRoutesById {
@@ -165,7 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/intake/$token': typeof IntakeTokenRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
-  '/_authenticated/admin/intake': typeof AuthenticatedAdminIntakeRoute
+  '/_authenticated/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
   '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/_authenticated/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/_authenticated/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -173,6 +182,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
+  '/_authenticated/admin/intake/$id': typeof AuthenticatedAdminIntakeIdRoute
   '/_authenticated/dashboard/calls/$id': typeof AuthenticatedDashboardCallsIdRoute
 }
 export interface FileRouteTypes {
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/dashboard/'
     | '/admin/clients/$slug'
+    | '/admin/intake/$id'
     | '/dashboard/calls/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/admin/clients/$slug'
+    | '/admin/intake/$id'
     | '/dashboard/calls/$id'
   id:
     | '__root__'
@@ -228,6 +240,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/dashboard/'
     | '/_authenticated/admin/clients/$slug'
+    | '/_authenticated/admin/intake/$id'
     | '/_authenticated/dashboard/calls/$id'
   fileRoutesById: FileRoutesById
 }
@@ -353,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardCallsIdRouteImport
       parentRoute: typeof AuthenticatedDashboardCallsRoute
     }
+    '/_authenticated/admin/intake/$id': {
+      id: '/_authenticated/admin/intake/$id'
+      path: '/$id'
+      fullPath: '/admin/intake/$id'
+      preLoaderRoute: typeof AuthenticatedAdminIntakeIdRouteImport
+      parentRoute: typeof AuthenticatedAdminIntakeRoute
+    }
     '/_authenticated/admin/clients/$slug': {
       id: '/_authenticated/admin/clients/$slug'
       path: '/clients/$slug'
@@ -363,16 +383,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminIntakeRouteChildren {
+  AuthenticatedAdminIntakeIdRoute: typeof AuthenticatedAdminIntakeIdRoute
+}
+
+const AuthenticatedAdminIntakeRouteChildren: AuthenticatedAdminIntakeRouteChildren =
+  {
+    AuthenticatedAdminIntakeIdRoute: AuthenticatedAdminIntakeIdRoute,
+  }
+
+const AuthenticatedAdminIntakeRouteWithChildren =
+  AuthenticatedAdminIntakeRoute._addFileChildren(
+    AuthenticatedAdminIntakeRouteChildren,
+  )
+
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
-  AuthenticatedAdminIntakeRoute: typeof AuthenticatedAdminIntakeRoute
+  AuthenticatedAdminIntakeRoute: typeof AuthenticatedAdminIntakeRouteWithChildren
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminClientsSlugRoute: typeof AuthenticatedAdminClientsSlugRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
-  AuthenticatedAdminIntakeRoute: AuthenticatedAdminIntakeRoute,
+  AuthenticatedAdminIntakeRoute: AuthenticatedAdminIntakeRouteWithChildren,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminClientsSlugRoute: AuthenticatedAdminClientsSlugRoute,
 }
