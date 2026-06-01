@@ -103,7 +103,7 @@ function AdminHome() {
         agent_status: input.agent_status,
         retell_phone_number: input.retell_phone_number || null,
         retell_agent_id: input.retell_agent_id || null,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
