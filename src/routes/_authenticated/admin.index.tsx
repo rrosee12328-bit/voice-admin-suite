@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, Users, DollarSign, Phone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Tenant, Plan } from "@/integrations/supabase/app-types";
 import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
 import { PlanBadge, StatusDot } from "@/components/badges";

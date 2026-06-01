@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Receipt } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Invoice } from "@/integrations/supabase/app-types";
 import { useMe } from "@/lib/me";
 import { EmptyState } from "@/components/empty-state";

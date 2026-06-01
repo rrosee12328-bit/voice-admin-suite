@@ -22,7 +22,7 @@ import {
 } from "recharts";
 import { subDays, format, startOfDay } from "date-fns";
 import { useMe } from "@/lib/me";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Call } from "@/integrations/supabase/app-types";
 import { StatCard } from "@/components/stat-card";
 import { StatusDot } from "@/components/badges";

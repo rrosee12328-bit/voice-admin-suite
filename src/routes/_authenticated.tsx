@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Profile, Tenant } from "@/integrations/supabase/app-types";
 import { MeProvider, type Me } from "@/lib/me";
 import { BrandingProvider } from "@/lib/branding";
