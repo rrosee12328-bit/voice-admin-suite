@@ -23,4 +23,4 @@ type LooseDatabase = {
   };
 };
 
-export const supabase = typedSupabase as unknown as SupabaseClient<LooseDatabase, "public", LooseDatabase["public"]>;
+export const supabase = typedSupabase as unknown as SupabaseClient<LooseDatabase, "public">;
