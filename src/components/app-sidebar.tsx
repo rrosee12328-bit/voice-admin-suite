@@ -9,6 +9,7 @@ import {
   LogOut,
   Lock,
   Receipt,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sidebar,
@@ -123,6 +124,14 @@ export function AppSidebar() {
                     <Link to="/admin/analytics">
                       <Activity />
                       <span>Platform Analytics</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin/intake")}>
+                    <Link to="/admin/intake">
+                      <ClipboardList />
+                      <span>Intake Forms</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
