@@ -9,6 +9,7 @@ import {
   LogOut,
   Lock,
   Receipt,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sidebar,
