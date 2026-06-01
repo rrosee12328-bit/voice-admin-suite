@@ -66,7 +66,7 @@ function CallDetailPage() {
 
   const updateMutation = useMutation({
     mutationFn: async (patch: Partial<Call>) => {
-      const { error } = await supabase.from("calls").update(patch).eq("id", id);
+      const { error } = await supabase.from("calls").update(patch as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

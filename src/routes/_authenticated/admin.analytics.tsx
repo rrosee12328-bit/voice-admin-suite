@@ -316,7 +316,7 @@ function PlatformAnalytics() {
             <div className="p-6 text-sm text-muted-foreground">No calls yet.</div>
           ) : (
             <ul className="divide-y divide-border/60">
-              {(recentCallsQ.data ?? []).map((c) => {
+              {(recentCallsQ.data ?? []).map((c: any) => {
                 const t = tenantById[c.tenant_id];
                 return (
                   <li
