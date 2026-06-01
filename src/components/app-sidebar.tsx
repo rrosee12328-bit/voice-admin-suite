@@ -24,7 +24,7 @@ import {
 import { useMe } from "@/lib/me";
 import { useBranding } from "@/lib/branding";
 import { canUse, PLAN_LABEL } from "@/lib/plan-gating";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client-untyped";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function AppSidebar() {

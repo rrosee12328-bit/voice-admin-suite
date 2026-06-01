@@ -11,7 +11,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Tenant, Call } from "@/integrations/supabase/app-types";
 import { PLAN_PRICE, PLAN_LABEL } from "@/lib/plan-gating";
 import { PlanBadge } from "@/components/badges";
