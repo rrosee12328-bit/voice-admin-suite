@@ -22,6 +22,7 @@ import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_au
 import { Route as AuthenticatedDashboardCallsRouteImport } from './routes/_authenticated/dashboard.calls'
 import { Route as AuthenticatedDashboardBillingRouteImport } from './routes/_authenticated/dashboard.billing'
 import { Route as AuthenticatedDashboardAnalyticsRouteImport } from './routes/_authenticated/dashboard.analytics'
+import { Route as AuthenticatedAdminIntakeRouteImport } from './routes/_authenticated/admin.intake'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedDashboardCallsIdRouteImport } from './routes/_authenticated/dashboard.calls.$id'
 import { Route as AuthenticatedAdminClientsSlugRouteImport } from './routes/_authenticated/admin.clients.$slug'
@@ -95,6 +96,12 @@ const AuthenticatedDashboardAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
+const AuthenticatedAdminIntakeRoute =
+  AuthenticatedAdminIntakeRouteImport.update({
+    id: '/intake',
+    path: '/intake',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
     id: '/analytics',
@@ -122,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/intake/$token': typeof IntakeTokenRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/intake': typeof AuthenticatedAdminIntakeRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -137,6 +145,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/intake/$token': typeof IntakeTokenRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/intake': typeof AuthenticatedAdminIntakeRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -156,6 +165,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/intake/$token': typeof IntakeTokenRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/_authenticated/admin/intake': typeof AuthenticatedAdminIntakeRoute
   '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/_authenticated/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/_authenticated/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/intake/$token'
     | '/admin/analytics'
+    | '/admin/intake'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/intake/$token'
     | '/admin/analytics'
+    | '/admin/intake'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -208,6 +220,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/intake/$token'
     | '/_authenticated/admin/analytics'
+    | '/_authenticated/admin/intake'
     | '/_authenticated/dashboard/analytics'
     | '/_authenticated/dashboard/billing'
     | '/_authenticated/dashboard/calls'
@@ -319,6 +332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardAnalyticsRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/_authenticated/admin/intake': {
+      id: '/_authenticated/admin/intake'
+      path: '/intake'
+      fullPath: '/admin/intake'
+      preLoaderRoute: typeof AuthenticatedAdminIntakeRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/analytics': {
       id: '/_authenticated/admin/analytics'
       path: '/analytics'
@@ -345,12 +365,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminIntakeRoute: typeof AuthenticatedAdminIntakeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminClientsSlugRoute: typeof AuthenticatedAdminClientsSlugRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminIntakeRoute: AuthenticatedAdminIntakeRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminClientsSlugRoute: AuthenticatedAdminClientsSlugRoute,
 }
