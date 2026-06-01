@@ -13,6 +13,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as IntakeTokenRouteImport } from './routes/intake.$token'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard.index'
@@ -42,6 +43,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntakeTokenRoute = IntakeTokenRouteImport.update({
+  id: '/intake/$token',
+  path: '/intake/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/intake/$token': typeof IntakeTokenRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/intake/$token': typeof IntakeTokenRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/intake/$token': typeof IntakeTokenRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/_authenticated/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/admin'
     | '/dashboard'
+    | '/intake/$token'
     | '/admin/analytics'
     | '/dashboard/analytics'
     | '/dashboard/billing'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/pricing'
+    | '/intake/$token'
     | '/admin/analytics'
     | '/dashboard/analytics'
     | '/dashboard/billing'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/intake/$token'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/dashboard/analytics'
     | '/_authenticated/dashboard/billing'
@@ -211,6 +223,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  IntakeTokenRoute: typeof IntakeTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/intake/$token': {
+      id: '/intake/$token'
+      path: '/intake/$token'
+      fullPath: '/intake/$token'
+      preLoaderRoute: typeof IntakeTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -394,7 +414,18 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  IntakeTokenRoute: IntakeTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
