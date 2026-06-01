@@ -1,7 +1,6 @@
-// Re-exports the generated Supabase client but loosens the typing so app code can reference
-// tables (tenants, calls, profiles, invoices, etc.) that live in the original Vektiss database
-// while the auto-generated types.ts is empty (Lovable Cloud connection state).
+// Loose-typed re-export of the Supabase client. The generated types.ts is empty
+// (Lovable Cloud connection state), so we cast to `any` to let app code reference
+// real Vektiss tables (tenants, calls, profiles, invoices, etc.) without TS errors.
 import { supabase as typedSupabase } from "./client";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
-export const supabase = typedSupabase as unknown as SupabaseClient<any, "public", any>;
+export const supabase: any = typedSupabase;
