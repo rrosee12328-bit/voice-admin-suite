@@ -229,7 +229,6 @@ function IntakePage() {
             plan={plan}
             contactEmail={contactEmail}
             token={token}
-            onEdit={() => saveMutation.mutate(false)}
             reopen={async () => {
               const { error } = await supabase
                 .from("intake_forms")
