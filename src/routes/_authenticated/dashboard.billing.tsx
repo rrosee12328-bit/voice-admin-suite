@@ -50,7 +50,18 @@ function BillingPage() {
         },
         body: JSON.stringify({ tenant_id: tenantId }),
       });
-      if (!res.ok) throw new Error(await res.text().catch(() => "Failed"));
+      if (!res.ok) {
+        const raw = await res.text().catch(() => "");
+        let msg = raw || `Request failed (${res.status})`;
+        try {
+          const parsed = JSON.parse(raw);
+          msg = parsed.error || parsed.message || msg;
+        } catch {}
+        if (/no stripe customer/i.test(msg)) {
+          msg = "No Stripe customer linked to this account yet. Complete a checkout to set up billing.";
+        }
+        throw new Error(msg);
+      }
       const data = await res.json();
       if (!data?.url) throw new Error("No portal URL returned.");
       window.open(data.url, "_blank", "noopener,noreferrer");
