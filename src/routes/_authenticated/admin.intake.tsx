@@ -192,12 +192,17 @@ function IntakeListPage() {
                         <Badge variant={row.status === "submitted" ? "default" : "secondary"}>
                           {row.status}
                         </Badge>
+                        {(row.answers as any)?.__plan && (
+                          <Badge variant="outline">
+                            {PLAN_LABEL[(row.answers as any).__plan as Plan]}
+                          </Badge>
+                        )}
                       </div>
                       <div className="mt-0.5 truncate text-xs text-muted-foreground">
                         {row.submitted_at
                           ? `Submitted ${formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })}`
                           : `Created ${formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}`}
-                        {row.contact_phone ? ` · ${row.contact_phone}` : ""}
+                        {(row.answers as any)?.__contact_email ? ` · ${(row.answers as any).__contact_email}` : row.contact_phone ? ` · ${row.contact_phone}` : ""}
                       </div>
                     </div>
                     <Button size="sm" variant="outline" onClick={() => copyLink(link)}>
