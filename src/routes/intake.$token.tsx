@@ -352,3 +352,131 @@ function QuestionField({
     </div>
   );
 }
+
+function ReviewAndPay({
+  plan,
+  contactEmail,
+  token,
+  reopen,
+}: {
+  plan: Plan | null;
+  contactEmail: string | null;
+  token: string;
+  onEdit: () => void;
+  reopen: () => void | Promise<void>;
+}) {
+  const [agreed, setAgreed] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  if (!plan) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Thanks — we've received your responses</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            Your Vektiss account manager will be in touch shortly with the next steps for your plan.
+          </p>
+          <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-900">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <span>Intake submitted successfully.</span>
+          </div>
+          <Button variant="outline" onClick={() => reopen()}>
+            <Pencil className="mr-2 h-4 w-4" /> Edit my answers
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const features = PLAN_FEATURES[plan];
+
+  const handlePay = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(VEKTISS_CHECKOUT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan,
+          intake_token: token,
+          customer_email: contactEmail ?? undefined,
+        }),
+      });
+      if (!res.ok) throw new Error(`Checkout failed (${res.status})`);
+      const data = (await res.json()) as { url?: string };
+      if (!data.url) throw new Error("No checkout URL returned");
+      window.location.href = data.url;
+    } catch (err) {
+      console.error(err);
+      toast.error("Couldn't start checkout. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-primary/30">
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-baseline justify-between gap-2 text-lg">
+            <span>{PLAN_LABEL[plan]}</span>
+            <span className="text-base font-medium text-muted-foreground">
+              ${PLAN_PRICE[plan]}/mo
+            </span>
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">{features.minutes}</p>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {features.bullets.map((b) => (
+              <li key={b} className="flex items-start gap-2 text-sm">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Terms & Conditions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="max-h-40 overflow-y-auto whitespace-pre-line rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+            {TERMS_PLACEHOLDER}
+          </div>
+          <label className="flex items-start gap-2 text-sm">
+            <Checkbox
+              checked={agreed}
+              onCheckedChange={(c) => setAgreed(c === true)}
+              className="mt-0.5"
+            />
+            <span>
+              I have read and agree to the Vektiss Terms of Service and Privacy Policy, and
+              I authorize monthly billing for the {PLAN_LABEL[plan]} plan at ${PLAN_PRICE[plan]}/mo.
+            </span>
+          </label>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button variant="ghost" onClick={() => reopen()}>
+          <Pencil className="mr-2 h-4 w-4" /> Edit my answers
+        </Button>
+        <Button size="lg" onClick={handlePay} disabled={!agreed || loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Opening Stripe…
+            </>
+          ) : (
+            <>
+              <CreditCard className="mr-2 h-4 w-4" /> Continue to payment
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
