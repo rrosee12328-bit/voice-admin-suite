@@ -20,6 +20,9 @@ import { toast } from "sonner";
 import { Copy, Plus, ExternalLink, FileText, FileDown } from "lucide-react";
 import { intakeToMarkdown, intakeToPdf, downloadBlob, type IntakeRow } from "@/lib/intake-export";
 import { formatDistanceToNow } from "date-fns";
+import { InviteClientDialog } from "@/components/invite-client-dialog";
+import { PLAN_LABEL } from "@/lib/plan-gating";
+import type { Plan } from "@/integrations/supabase/app-types";
 
 export const Route = createFileRoute("/_authenticated/admin/intake")({
   component: IntakeRouteShell,
@@ -96,67 +99,70 @@ function IntakeListPage() {
             Create a unique link to send to a new client. Download submissions as PDF or Markdown.
           </p>
         </div>
-        <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) setCreatedLink(null); }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> New intake
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{createdLink ? "Intake link ready" : "Create intake form"}</DialogTitle>
-            </DialogHeader>
-            {!createdLink ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Pre-fill what you already know — the client can edit anything before submitting.
-                </p>
-                <div className="space-y-2">
-                  <Label htmlFor="bn">Business name</Label>
-                  <Input id="bn" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} />
+        <div className="flex items-center gap-2">
+          <InviteClientDialog triggerLabel="Invite client" />
+          <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) setCreatedLink(null); }}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" /> Blank intake
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{createdLink ? "Intake link ready" : "Create intake form"}</DialogTitle>
+              </DialogHeader>
+              {!createdLink ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Pre-fill what you already know — the client can edit anything before submitting.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="bn">Business name</Label>
+                    <Input id="bn" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cp">Primary phone</Label>
+                    <Input id="cp" value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ws">Website</Label>
+                    <Input id="ws" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sv">Services (free-form)</Label>
+                    <Textarea id="sv" rows={3} value={form.services} onChange={(e) => setForm({ ...form, services: e.target.value })} placeholder="Paste or list services found on their website" />
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+                    <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+                      Create link
+                    </Button>
+                  </DialogFooter>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cp">Primary phone</Label>
-                  <Input id="cp" value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} />
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Share this link with the client. They can fill it out without logging in.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input value={createdLink} readOnly className="font-mono text-xs" />
+                    <Button variant="outline" onClick={() => copyLink(createdLink)}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href={createdLink} target="_blank" rel="noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={() => setCreateOpen(false)}>Done</Button>
+                  </DialogFooter>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ws">Website</Label>
-                  <Input id="ws" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sv">Services (free-form)</Label>
-                  <Textarea id="sv" rows={3} value={form.services} onChange={(e) => setForm({ ...form, services: e.target.value })} placeholder="Paste or list services found on their website" />
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                  <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
-                    Create link
-                  </Button>
-                </DialogFooter>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Share this link with the client. They can fill it out without logging in.
-                </p>
-                <div className="flex gap-2">
-                  <Input value={createdLink} readOnly className="font-mono text-xs" />
-                  <Button variant="outline" onClick={() => copyLink(createdLink)}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <a href={createdLink} target="_blank" rel="noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
-                </div>
-                <DialogFooter>
-                  <Button onClick={() => setCreateOpen(false)}>Done</Button>
-                </DialogFooter>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -186,12 +192,17 @@ function IntakeListPage() {
                         <Badge variant={row.status === "submitted" ? "default" : "secondary"}>
                           {row.status}
                         </Badge>
+                        {(row.answers as any)?.__plan && (
+                          <Badge variant="outline">
+                            {PLAN_LABEL[(row.answers as any).__plan as Plan]}
+                          </Badge>
+                        )}
                       </div>
                       <div className="mt-0.5 truncate text-xs text-muted-foreground">
                         {row.submitted_at
                           ? `Submitted ${formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })}`
                           : `Created ${formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}`}
-                        {row.contact_phone ? ` · ${row.contact_phone}` : ""}
+                        {(row.answers as any)?.__contact_email ? ` · ${(row.answers as any).__contact_email}` : row.contact_phone ? ` · ${row.contact_phone}` : ""}
                       </div>
                     </div>
                     <Button size="sm" variant="outline" onClick={() => copyLink(link)}>

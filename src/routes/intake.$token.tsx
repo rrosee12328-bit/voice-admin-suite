@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { INTAKE_SECTIONS, type Question } from "@/lib/intake-questions";
+import type { Plan } from "@/integrations/supabase/app-types";
+import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +12,37 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Check, CheckCircle2, CreditCard, Loader2, Pencil } from "lucide-react";
+
+const PLAN_FEATURES: Record<Plan, { minutes: string; bullets: string[] }> = {
+  phone_starter: {
+    minutes: "100 minutes/month included",
+    bullets: ["AI phone receptionist", "Call logging", "Post-call summaries"],
+  },
+  phone_email: {
+    minutes: "200 minutes/month included",
+    bullets: ["Everything in Starter", "Automated email follow-ups", "Transcripts & analytics"],
+  },
+  ai_front_office: {
+    minutes: "500 minutes/month included",
+    bullets: [
+      "Everything in Phone + Email",
+      "SMS messaging",
+      "Lead scoring & caller memory",
+      "Calendar booking",
+      "Priority support",
+    ],
+  },
+  custom: { minutes: "Custom volume", bullets: ["Tailored to your practice"] },
+};
+
+const TERMS_PLACEHOLDER = `By proceeding you agree to Vektiss's Terms of Service and Privacy Policy.
+Your subscription will renew monthly at the listed price until cancelled.
+Usage above the included minutes is billed at standard overage rates.
+You may cancel at any time from your billing dashboard.`;
+
+const VEKTISS_CHECKOUT =
+  "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/create-checkout";
 
 export const Route = createFileRoute("/intake/$token")({
   head: () => ({
@@ -141,6 +173,10 @@ function IntakePage() {
     );
   }
 
+
+  const plan = (row.answers?.__plan as Plan | undefined) ?? null;
+  const contactEmail = (row.answers?.__contact_email as string | undefined) ?? null;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-10">
@@ -148,77 +184,106 @@ function IntakePage() {
           <div className="text-xs font-medium uppercase tracking-wider text-primary">
             Vektiss Voice
           </div>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Client Intake Questionnaire</h1>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            {isSubmitted ? "Review & Pay" : "Client Intake Questionnaire"}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Help us configure your AI receptionist. You can save and come back later — your progress is preserved by this unique link.
+            {isSubmitted
+              ? "Confirm your plan and accept the terms to activate your AI receptionist."
+              : "Help us configure your AI receptionist. You can save and come back later — your progress is preserved by this unique link."}
           </p>
-          <div className="mt-4 flex items-center gap-3">
-            <div className="h-1.5 flex-1 rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${(progress.filled / progress.total) * 100}%` }}
-              />
+          {!isSubmitted && (
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-1.5 flex-1 rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${(progress.filled / progress.total) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {progress.filled}/{progress.total}
+              </span>
             </div>
-            <span className="text-xs tabular-nums text-muted-foreground">
-              {progress.filled}/{progress.total}
-            </span>
-          </div>
+          )}
         </header>
 
-        {isSubmitted && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
-            <div className="text-sm">
-              <div className="font-semibold">Submitted</div>
-              <div className="mt-0.5">
-                Your responses were received on {new Date(row.submitted_at!).toLocaleString()}. You can still edit and re-submit if anything changes.
+        {plan && !isSubmitted && (
+          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <div className="text-xs font-medium uppercase tracking-wider text-primary">
+              Selected plan
+            </div>
+            <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+              <div className="text-lg font-semibold">{PLAN_LABEL[plan]}</div>
+              <div className="text-sm text-muted-foreground">
+                ${PLAN_PRICE[plan]}/mo · {PLAN_FEATURES[plan].minutes}
               </div>
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              You'll confirm and pay after submitting this form.
+            </p>
           </div>
         )}
 
-        <div className="space-y-6">
-          {INTAKE_SECTIONS.map((section) => (
-            <Card key={section.id}>
-              <CardHeader>
-                <CardTitle className="text-lg">{section.title}</CardTitle>
-                {section.intro && (
-                  <p className="text-sm text-muted-foreground">{section.intro}</p>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {section.questions.map((q) => (
-                  <QuestionField
-                    key={q.id}
-                    q={q}
-                    value={answers[q.id]}
-                    onChange={(v) => setAnswer(q.id, v)}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {isSubmitted ? (
+          <ReviewAndPay
+            plan={plan}
+            contactEmail={contactEmail}
+            token={token}
+            reopen={async () => {
+              const { error } = await supabase
+                .from("intake_forms")
+                .update({ status: "in_progress" })
+                .eq("token", token);
+              if (error) toast.error(error.message);
+              else formQ.refetch();
+            }}
+          />
+        ) : (
+          <>
+            <div className="space-y-6">
+              {INTAKE_SECTIONS.map((section) => (
+                <Card key={section.id}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{section.title}</CardTitle>
+                    {section.intro && (
+                      <p className="text-sm text-muted-foreground">{section.intro}</p>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    {section.questions.map((q) => (
+                      <QuestionField
+                        key={q.id}
+                        q={q}
+                        value={answers[q.id]}
+                        onChange={(v) => setAnswer(q.id, v)}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-        <div className="sticky bottom-4 z-10 mt-8 flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
-          <span className="mr-auto text-xs text-muted-foreground">
-            Auto-save by clicking "Save progress"
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => saveMutation.mutate(false)}
-            disabled={saveMutation.isPending}
-          >
-            {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Save progress
-          </Button>
-          <Button
-            onClick={() => saveMutation.mutate(true)}
-            disabled={saveMutation.isPending}
-          >
-            {isSubmitted ? "Re-submit" : "Submit"}
-          </Button>
-        </div>
+            <div className="sticky bottom-4 z-10 mt-8 flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
+              <span className="mr-auto text-xs text-muted-foreground">
+                {plan ? "Next: review your plan and pay" : "Auto-save by clicking \"Save progress\""}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => saveMutation.mutate(false)}
+                disabled={saveMutation.isPending}
+              >
+                {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save progress
+              </Button>
+              <Button
+                onClick={() => saveMutation.mutate(true)}
+                disabled={saveMutation.isPending}
+              >
+                {plan ? "Submit & continue to payment" : "Submit"}
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -283,6 +348,133 @@ function QuestionField({
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
       />
+    </div>
+  );
+}
+
+function ReviewAndPay({
+  plan,
+  contactEmail,
+  token,
+  reopen,
+}: {
+  plan: Plan | null;
+  contactEmail: string | null;
+  token: string;
+  reopen: () => void | Promise<void>;
+}) {
+  const [agreed, setAgreed] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  if (!plan) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Thanks — we've received your responses</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            Your Vektiss account manager will be in touch shortly with the next steps for your plan.
+          </p>
+          <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-900">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <span>Intake submitted successfully.</span>
+          </div>
+          <Button variant="outline" onClick={() => reopen()}>
+            <Pencil className="mr-2 h-4 w-4" /> Edit my answers
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const features = PLAN_FEATURES[plan];
+
+  const handlePay = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(VEKTISS_CHECKOUT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan,
+          intake_token: token,
+          customer_email: contactEmail ?? undefined,
+        }),
+      });
+      if (!res.ok) throw new Error(`Checkout failed (${res.status})`);
+      const data = (await res.json()) as { url?: string };
+      if (!data.url) throw new Error("No checkout URL returned");
+      window.location.href = data.url;
+    } catch (err) {
+      console.error(err);
+      toast.error("Couldn't start checkout. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-primary/30">
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-baseline justify-between gap-2 text-lg">
+            <span>{PLAN_LABEL[plan]}</span>
+            <span className="text-base font-medium text-muted-foreground">
+              ${PLAN_PRICE[plan]}/mo
+            </span>
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">{features.minutes}</p>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {features.bullets.map((b) => (
+              <li key={b} className="flex items-start gap-2 text-sm">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Terms & Conditions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="max-h-40 overflow-y-auto whitespace-pre-line rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+            {TERMS_PLACEHOLDER}
+          </div>
+          <label className="flex items-start gap-2 text-sm">
+            <Checkbox
+              checked={agreed}
+              onCheckedChange={(c) => setAgreed(c === true)}
+              className="mt-0.5"
+            />
+            <span>
+              I have read and agree to the Vektiss Terms of Service and Privacy Policy, and
+              I authorize monthly billing for the {PLAN_LABEL[plan]} plan at ${PLAN_PRICE[plan]}/mo.
+            </span>
+          </label>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button variant="ghost" onClick={() => reopen()}>
+          <Pencil className="mr-2 h-4 w-4" /> Edit my answers
+        </Button>
+        <Button size="lg" onClick={handlePay} disabled={!agreed || loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Opening Stripe…
+            </>
+          ) : (
+            <>
+              <CreditCard className="mr-2 h-4 w-4" /> Continue to payment
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
