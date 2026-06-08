@@ -33,9 +33,21 @@ function BillingPage() {
     if (!tenantId) return toast.error("No tenant found.");
     setPortalLoading(true);
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) {
+        toast.error("Your session has expired. Please sign in again.");
+        return;
+      }
+      const VEKTISS_ANON =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
       const res = await fetch(`${VEKTISS_FN}/customer-portal`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: VEKTISS_ANON,
+        },
         body: JSON.stringify({ tenant_id: tenantId }),
       });
       if (!res.ok) throw new Error(await res.text().catch(() => "Failed"));
