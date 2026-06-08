@@ -361,7 +361,6 @@ function ReviewAndPay({
   plan: Plan | null;
   contactEmail: string | null;
   token: string;
-  onEdit: () => void;
   reopen: () => void | Promise<void>;
 }) {
   const [agreed, setAgreed] = useState(false);
