@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { INTAKE_SECTIONS, type Question } from "@/lib/intake-questions";
+import type { Plan } from "@/integrations/supabase/app-types";
+import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +12,37 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Check, CheckCircle2, CreditCard, Loader2, Pencil } from "lucide-react";
+
+const PLAN_FEATURES: Record<Plan, { minutes: string; bullets: string[] }> = {
+  phone_starter: {
+    minutes: "100 minutes/month included",
+    bullets: ["AI phone receptionist", "Call logging", "Post-call summaries"],
+  },
+  phone_email: {
+    minutes: "200 minutes/month included",
+    bullets: ["Everything in Starter", "Automated email follow-ups", "Transcripts & analytics"],
+  },
+  ai_front_office: {
+    minutes: "500 minutes/month included",
+    bullets: [
+      "Everything in Phone + Email",
+      "SMS messaging",
+      "Lead scoring & caller memory",
+      "Calendar booking",
+      "Priority support",
+    ],
+  },
+  custom: { minutes: "Custom volume", bullets: ["Tailored to your practice"] },
+};
+
+const TERMS_PLACEHOLDER = `By proceeding you agree to Vektiss's Terms of Service and Privacy Policy.
+Your subscription will renew monthly at the listed price until cancelled.
+Usage above the included minutes is billed at standard overage rates.
+You may cancel at any time from your billing dashboard.`;
+
+const VEKTISS_CHECKOUT =
+  "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/create-checkout";
 
 export const Route = createFileRoute("/intake/$token")({
   head: () => ({
