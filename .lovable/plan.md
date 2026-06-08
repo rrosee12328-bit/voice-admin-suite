@@ -1,24 +1,21 @@
-## Plan
+## Problem
 
-1. **Fix the recording click behavior in the call log**
-   - Replace the current recording icon link that opens the raw audio URL in a new tab.
-   - Make the recording action open the call detail page where the custom audio player lives.
-   - Keep the separate “view details” action, but make both paths reliable for super admins and client users.
+The "Manage subscription" button calls the Vektiss `customer-portal` backend function, but the request is sent without an `Authorization` header. The function rejects it with `UNAUTHORIZED_NO_AUTH_HEADER / Missing authorization header`.
 
-2. **Make transcript previews clickable**
-   - Turn the transcript preview cell into a clear click target.
-   - Clicking transcript text will open the full call detail page and scroll/anchor attention to the transcript area.
-   - If there is no transcript, keep the dash/non-clickable state.
+## Fix
 
-3. **Ensure client-context navigation works for super admins**
-   - Update the admin client view so “View full call log” opens the call log pre-filtered to that client instead of a generic dashboard route.
-   - Add query-param support to the call log so super admins can land on the relevant client’s calls immediately.
+In `src/routes/_authenticated/dashboard.billing.tsx`, update `handleManageBilling` to:
 
-4. **Improve the call detail experience**
-   - Keep the custom audio player visible at the top of the detail content when a recording exists.
-   - Keep full transcripts visible for super admins regardless of the client’s plan.
-   - Add an obvious transcript panel with copy support and better readable spacing.
+1. Grab the current Supabase session via `supabase.auth.getSession()`.
+2. If there's no access token, show a "Please sign in again" toast and stop.
+3. Include the token on the fetch call:
+   - `Authorization: Bearer <access_token>`
+   - `apikey: <supabase publishable key>` (some Supabase functions also require this)
+4. Keep the existing `Content-Type: application/json` and `{ tenant_id }` body.
+5. Keep the existing success/error handling (open returned `url` in a new tab, toast on failure).
 
-5. **Validate the path**
-   - Verify there are no preview/server errors after the change.
-   - Confirm the intended user flow: admin client → call log → recording/transcript click → detail page with player and full transcript.
+No other files change. No backend changes — the existing `customer-portal` function on the Vektiss backend already expects an authenticated caller; we just weren't sending the header.
+
+## Validation
+
+After the change, click "Manage subscription" as a client user and confirm the Stripe Customer Portal opens in a new tab instead of the error toast.
