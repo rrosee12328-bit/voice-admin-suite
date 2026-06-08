@@ -90,7 +90,9 @@ function BillingPage() {
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Current plan</div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-xl font-semibold">{PLAN_LABEL[plan] ?? plan}</span>
-              <span className="text-sm text-muted-foreground">{PLAN_PRICE[plan] ?? ""}</span>
+              {PLAN_PRICE[plan] != null && (
+                <span className="text-sm text-muted-foreground">${PLAN_PRICE[plan]}/mo</span>
+              )}
             </div>
             {subStatus && (
               <div className="mt-1 text-xs">
