@@ -197,60 +197,117 @@ function IntakePage() {
           </div>
         </header>
 
-        {isSubmitted && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
-            <div className="text-sm">
-              <div className="font-semibold">Submitted</div>
-              <div className="mt-0.5">
-                Your responses were received on {new Date(row.submitted_at!).toLocaleString()}. You can still edit and re-submit if anything changes.
+  const plan = (row.answers?.__plan as Plan | undefined) ?? null;
+  const contactEmail = (row.answers?.__contact_email as string | undefined) ?? null;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-3xl px-4 py-10">
+        <header className="mb-8">
+          <div className="text-xs font-medium uppercase tracking-wider text-primary">
+            Vektiss Voice
+          </div>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            {isSubmitted ? "Review & Pay" : "Client Intake Questionnaire"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isSubmitted
+              ? "Confirm your plan and accept the terms to activate your AI receptionist."
+              : "Help us configure your AI receptionist. You can save and come back later — your progress is preserved by this unique link."}
+          </p>
+          {!isSubmitted && (
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-1.5 flex-1 rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${(progress.filled / progress.total) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {progress.filled}/{progress.total}
+              </span>
+            </div>
+          )}
+        </header>
+
+        {plan && !isSubmitted && (
+          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <div className="text-xs font-medium uppercase tracking-wider text-primary">
+              Selected plan
+            </div>
+            <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+              <div className="text-lg font-semibold">{PLAN_LABEL[plan]}</div>
+              <div className="text-sm text-muted-foreground">
+                ${PLAN_PRICE[plan]}/mo · {PLAN_FEATURES[plan].minutes}
               </div>
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              You'll confirm and pay after submitting this form.
+            </p>
           </div>
         )}
 
-        <div className="space-y-6">
-          {INTAKE_SECTIONS.map((section) => (
-            <Card key={section.id}>
-              <CardHeader>
-                <CardTitle className="text-lg">{section.title}</CardTitle>
-                {section.intro && (
-                  <p className="text-sm text-muted-foreground">{section.intro}</p>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {section.questions.map((q) => (
-                  <QuestionField
-                    key={q.id}
-                    q={q}
-                    value={answers[q.id]}
-                    onChange={(v) => setAnswer(q.id, v)}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {isSubmitted ? (
+          <ReviewAndPay
+            plan={plan}
+            contactEmail={contactEmail}
+            token={token}
+            onEdit={() => saveMutation.mutate(false)}
+            reopen={async () => {
+              const { error } = await supabase
+                .from("intake_forms")
+                .update({ status: "in_progress" })
+                .eq("token", token);
+              if (error) toast.error(error.message);
+              else formQ.refetch();
+            }}
+          />
+        ) : (
+          <>
+            <div className="space-y-6">
+              {INTAKE_SECTIONS.map((section) => (
+                <Card key={section.id}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{section.title}</CardTitle>
+                    {section.intro && (
+                      <p className="text-sm text-muted-foreground">{section.intro}</p>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    {section.questions.map((q) => (
+                      <QuestionField
+                        key={q.id}
+                        q={q}
+                        value={answers[q.id]}
+                        onChange={(v) => setAnswer(q.id, v)}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-        <div className="sticky bottom-4 z-10 mt-8 flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
-          <span className="mr-auto text-xs text-muted-foreground">
-            Auto-save by clicking "Save progress"
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => saveMutation.mutate(false)}
-            disabled={saveMutation.isPending}
-          >
-            {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Save progress
-          </Button>
-          <Button
-            onClick={() => saveMutation.mutate(true)}
-            disabled={saveMutation.isPending}
-          >
-            {isSubmitted ? "Re-submit" : "Submit"}
-          </Button>
-        </div>
+            <div className="sticky bottom-4 z-10 mt-8 flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
+              <span className="mr-auto text-xs text-muted-foreground">
+                {plan ? "Next: review your plan and pay" : "Auto-save by clicking \"Save progress\""}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => saveMutation.mutate(false)}
+                disabled={saveMutation.isPending}
+              >
+                {saveMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save progress
+              </Button>
+              <Button
+                onClick={() => saveMutation.mutate(true)}
+                disabled={saveMutation.isPending}
+              >
+                {plan ? "Submit & continue to payment" : "Submit"}
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
