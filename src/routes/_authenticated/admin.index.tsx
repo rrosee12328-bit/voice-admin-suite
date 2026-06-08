@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { InviteClientDialog } from "@/components/invite-client-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminHome,
