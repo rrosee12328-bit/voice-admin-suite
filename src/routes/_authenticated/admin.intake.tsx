@@ -20,6 +20,9 @@ import { toast } from "sonner";
 import { Copy, Plus, ExternalLink, FileText, FileDown } from "lucide-react";
 import { intakeToMarkdown, intakeToPdf, downloadBlob, type IntakeRow } from "@/lib/intake-export";
 import { formatDistanceToNow } from "date-fns";
+import { InviteClientDialog } from "@/components/invite-client-dialog";
+import { PLAN_LABEL } from "@/lib/plan-gating";
+import type { Plan } from "@/integrations/supabase/app-types";
 
 export const Route = createFileRoute("/_authenticated/admin/intake")({
   component: IntakeRouteShell,
