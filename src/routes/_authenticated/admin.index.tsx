@@ -122,74 +122,77 @@ function AdminHome() {
           <h1 className="text-2xl font-semibold tracking-tight">Platform</h1>
           <p className="text-sm text-muted-foreground">Manage all client workspaces</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-1 h-4 w-4" /> Add client</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Create new client</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label>Practice name</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Acme Dental" />
+        <div className="flex items-center gap-2">
+          <InviteClientDialog triggerLabel="Invite client" />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline"><Plus className="mr-1 h-4 w-4" /> Add client manually</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Create new client</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Practice name</Label>
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Acme Dental" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Slug</Label>
+                  <Input
+                    value={form.slug}
+                    onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+                    placeholder="acme-dental"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Plan</Label>
+                  <Select value={form.plan} onValueChange={(v) => setForm({ ...form, plan: v as Plan })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(["phone_starter", "phone_email", "ai_front_office", "custom"] as Plan[]).map((p) => (
+                        <SelectItem key={p} value={p}>{PLAN_LABEL[p]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Agent status</Label>
+                  <Select value={form.agent_status} onValueChange={(v) => setForm({ ...form, agent_status: v as typeof form.agent_status })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paused">Paused</SelectItem>
+                      <SelectItem value="live">Live</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Retell phone number</Label>
+                  <Input
+                    value={form.retell_phone_number}
+                    onChange={(e) => setForm({ ...form, retell_phone_number: e.target.value })}
+                    placeholder="+16153074302"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Retell agent ID</Label>
+                  <Input
+                    value={form.retell_agent_id}
+                    onChange={(e) => setForm({ ...form, retell_agent_id: e.target.value })}
+                    placeholder="agent_..."
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Slug</Label>
-                <Input
-                  value={form.slug}
-                  onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
-                  placeholder="acme-dental"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Plan</Label>
-                <Select value={form.plan} onValueChange={(v) => setForm({ ...form, plan: v as Plan })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(["phone_starter", "phone_email", "ai_front_office", "custom"] as Plan[]).map((p) => (
-                      <SelectItem key={p} value={p}>{PLAN_LABEL[p]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Agent status</Label>
-                <Select value={form.agent_status} onValueChange={(v) => setForm({ ...form, agent_status: v as typeof form.agent_status })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="paused">Paused</SelectItem>
-                    <SelectItem value="live">Live</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Retell phone number</Label>
-                <Input
-                  value={form.retell_phone_number}
-                  onChange={(e) => setForm({ ...form, retell_phone_number: e.target.value })}
-                  placeholder="+16153074302"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Retell agent ID</Label>
-                <Input
-                  value={form.retell_agent_id}
-                  onChange={(e) => setForm({ ...form, retell_agent_id: e.target.value })}
-                  placeholder="agent_..."
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button
-                disabled={!form.name || !form.slug || createMutation.isPending}
-                onClick={() => createMutation.mutate(form)}
-              >
-                {createMutation.isPending ? "Creating…" : "Create client"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button
+                  disabled={!form.name || !form.slug || createMutation.isPending}
+                  onClick={() => createMutation.mutate(form)}
+                >
+                  {createMutation.isPending ? "Creating…" : "Create client"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
