@@ -173,29 +173,6 @@ function IntakePage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        <header className="mb-8">
-          <div className="text-xs font-medium uppercase tracking-wider text-primary">
-            Vektiss Voice
-          </div>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Client Intake Questionnaire</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Help us configure your AI receptionist. You can save and come back later — your progress is preserved by this unique link.
-          </p>
-          <div className="mt-4 flex items-center gap-3">
-            <div className="h-1.5 flex-1 rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${(progress.filled / progress.total) * 100}%` }}
-              />
-            </div>
-            <span className="text-xs tabular-nums text-muted-foreground">
-              {progress.filled}/{progress.total}
-            </span>
-          </div>
-        </header>
 
   const plan = (row.answers?.__plan as Plan | undefined) ?? null;
   const contactEmail = (row.answers?.__contact_email as string | undefined) ?? null;
