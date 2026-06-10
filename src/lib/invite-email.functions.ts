@@ -24,7 +24,7 @@ export const sendInviteEmail = createServerFn({ method: "POST" })
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
     if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not configured");
 
-    const from = process.env.RESEND_FROM || "Vektiss Support <support@vektiss.com>";
+    const from = process.env.RESEND_FROM || "Vektiss Support <support@support.vektiss.com>";
     const planLabel = PLAN_LABELS[data.plan] || data.plan;
     const greetingName = data.businessName ? ` ${data.businessName}` : "";
 
