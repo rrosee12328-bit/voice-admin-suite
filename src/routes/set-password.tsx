@@ -94,10 +94,10 @@ function SetPasswordPage() {
           <div className="mt-6 rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             This invitation link is invalid or has expired. Please contact{" "}
             <a
-              href="mailto:support@vektiss.com"
+              href="mailto:info@vektiss.com"
               className="font-medium text-foreground underline-offset-2 hover:underline"
             >
-              support@vektiss.com
+              info@vektiss.com
             </a>{" "}
             for a new invite.
           </div>

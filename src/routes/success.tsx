@@ -40,10 +40,10 @@ function SuccessPage() {
           <p className="mt-6 text-xs text-muted-foreground">
             Didn't receive it? Check your spam folder or contact{" "}
             <a
-              href="mailto:support@vektiss.com"
+              href="mailto:info@vektiss.com"
               className="font-medium text-foreground underline-offset-2 hover:underline"
             >
-              support@vektiss.com
+              info@vektiss.com
             </a>
           </p>
         </div>
