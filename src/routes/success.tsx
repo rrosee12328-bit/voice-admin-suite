@@ -33,9 +33,9 @@ function SuccessPage() {
             inbox to set up your account password.
           </p>
 
-          <Button asChild className="mt-6 w-full">
-            <Link to="/login">Go to Login</Link>
-          </Button>
+          <p className="mt-6 text-sm text-muted-foreground">
+            Check your email to set your password — once you've set it, you'll be able to log in to your dashboard.
+          </p>
 
           <p className="mt-6 text-xs text-muted-foreground">
             Didn't receive it? Check your spam folder or contact{" "}
