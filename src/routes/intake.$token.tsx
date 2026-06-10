@@ -42,7 +42,7 @@ Usage above the included minutes is billed at standard overage rates.
 You may cancel at any time from your billing dashboard.`;
 
 const VEKTISS_CHECKOUT =
-  "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/create-checkout";
+  "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/create-checkout-test";
 
 export const Route = createFileRoute("/intake/$token")({
   head: () => ({
