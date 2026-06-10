@@ -370,6 +370,24 @@ function ReviewAndPay({
   reopen: () => void | Promise<void>;
 }) {
   const [agreed, setAgreed] = useState(false);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const tosScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = tosScrollRef.current;
+    if (!el) return;
+    // If not scrollable (e.g. very tall viewport), don't trap the user.
+    if (el.scrollHeight <= el.clientHeight + 8) {
+      setHasScrolledToBottom(true);
+    }
+  }, []);
+
+  const handleTosScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 8) {
+      setHasScrolledToBottom(true);
+    }
+  };
   const [loading, setLoading] = useState(false);
 
   if (!plan) {
