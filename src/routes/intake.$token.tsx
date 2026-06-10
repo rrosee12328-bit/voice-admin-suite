@@ -428,7 +428,7 @@ function ReviewAndPay({
             business_name: businessName,
             plan,
             intake_token: token,
-            tos_version: "2.0",
+            tos_version: TOS_VERSION,
           },
         });
         if (tosError) console.warn("log-tos-acceptance failed:", tosError);
