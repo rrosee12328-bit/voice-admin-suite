@@ -10,42 +10,32 @@ export type SendInviteArgs = {
   intakeUrl: string;
 };
 
-function isUnauthorized(error: unknown) {
-  const msg = error instanceof Error ? error.message : String(error);
-  return msg.toLowerCase().includes("unauthorized");
+async function getAccessToken(): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  let token = data.session?.access_token;
+  if (!token) {
+    const refreshed = await supabase.auth.refreshSession();
+    token = refreshed.data.session?.access_token;
+  }
+  if (!token) {
+    throw new Error("You are not signed in. Please sign in and try again.");
+  }
+  return token;
 }
 
 export async function sendClientInvite(args: SendInviteArgs) {
-  const payload = {
+  // Admin bypass: the server validates the access token via the Supabase Auth
+  // API (network call) and checks the admin role, independent of the worker's
+  // JWT validation middleware. This avoids stale-session/JWKS rejections.
+  const accessToken = await getAccessToken();
+  await sendInviteEmail({
     data: {
       recipientEmail: args.recipientEmail,
       businessName: args.businessName,
       plan: args.plan,
       intakeUrl: args.intakeUrl,
+      accessToken,
     },
-  };
-
-  try {
-    await sendInviteEmail(payload);
-  } catch (error) {
-    if (!isUnauthorized(error)) throw error;
-    // Stale/invalid access token — force a session refresh and retry once.
-    const { data, error: refreshError } = await supabase.auth.refreshSession();
-    if (refreshError || !data.session) {
-      throw new Error(
-        "Your session has expired. Please sign out and sign back in, then try again.",
-      );
-    }
-    try {
-      await sendInviteEmail(payload);
-    } catch (retryError) {
-      if (isUnauthorized(retryError)) {
-        throw new Error(
-          "Your session has expired. Please sign out and sign back in, then try again.",
-        );
-      }
-      throw retryError;
-    }
-  }
+  });
   return true;
 }

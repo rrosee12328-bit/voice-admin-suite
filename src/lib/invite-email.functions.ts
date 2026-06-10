@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireAuthRobust } from "@/lib/require-auth-middleware";
 import { z } from "zod";
 
 const InputSchema = z.object({
@@ -7,6 +6,7 @@ const InputSchema = z.object({
   businessName: z.string().max(255).nullable().optional(),
   plan: z.string().min(1).max(64),
   intakeUrl: z.string().url().max(2048),
+  accessToken: z.string().min(10).max(4096),
 });
 
 const PLAN_LABELS: Record<string, string> = {
@@ -16,9 +16,33 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 export const sendInviteEmail = createServerFn({ method: "POST" })
-  .middleware([requireAuthRobust])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
+    // Admin bypass: validate the caller via the Supabase Auth API directly
+    // (network call, not local JWKS), so a stale/rotated signing key on the
+    // worker does not block legitimate admins from sending invites.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(
+      data.accessToken,
+    );
+    if (userError || !userData?.user) {
+      throw new Error("Unauthorized: could not verify caller identity.");
+    }
+
+    const { data: profile, error: roleError } = await (supabaseAdmin as any)
+      .from("profiles")
+      .select("role")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+    if (roleError) {
+      throw new Error(`Authorization check failed: ${roleError.message}`);
+    }
+    const role = profile?.role as string | undefined;
+    if (role !== "admin" && role !== "super_admin") {
+      throw new Error("Forbidden: admin role required to send invites.");
+    }
+
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
