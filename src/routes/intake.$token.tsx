@@ -404,6 +404,24 @@ function ReviewAndPay({
     setLoading(true);
     try {
       const clientFirstName = (contactName ?? businessName ?? "").trim().split(/\s+/)[0] ?? "";
+
+      // Log ToS acceptance (non-blocking on failure)
+      try {
+        const { error: tosError } = await supabase.functions.invoke("log-tos-acceptance", {
+          body: {
+            email: contactEmail ?? "",
+            client_name: clientFirstName,
+            business_name: businessName,
+            plan,
+            intake_token: token,
+            tos_version: "2.0",
+          },
+        });
+        if (tosError) console.warn("log-tos-acceptance failed:", tosError);
+      } catch (tosErr) {
+        console.warn("log-tos-acceptance threw:", tosErr);
+      }
+
       const res = await fetch(VEKTISS_CHECKOUT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
