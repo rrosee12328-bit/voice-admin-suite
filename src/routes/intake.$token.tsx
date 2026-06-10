@@ -228,6 +228,9 @@ function IntakePage() {
           <ReviewAndPay
             plan={plan}
             contactEmail={contactEmail}
+            businessName={pre.business_name || (row.answers?.business_name as string | undefined) || ""}
+            contactName={(row.answers?.contact_name as string | undefined) ?? null}
+            contactPhone={pre.contact_phone || (row.answers?.primary_phone as string | undefined) || ""}
             token={token}
             reopen={async () => {
               const { error } = await supabase
@@ -238,6 +241,7 @@ function IntakePage() {
               else formQ.refetch();
             }}
           />
+
         ) : (
           <>
             <div className="space-y-6">
@@ -355,11 +359,17 @@ function QuestionField({
 function ReviewAndPay({
   plan,
   contactEmail,
+  businessName,
+  contactName,
+  contactPhone,
   token,
   reopen,
 }: {
   plan: Plan | null;
   contactEmail: string | null;
+  businessName: string;
+  contactName: string | null;
+  contactPhone: string;
   token: string;
   reopen: () => void | Promise<void>;
 }) {
@@ -393,6 +403,7 @@ function ReviewAndPay({
   const handlePay = async () => {
     setLoading(true);
     try {
+      const clientFirstName = (contactName ?? businessName ?? "").trim().split(/\s+/)[0] ?? "";
       const res = await fetch(VEKTISS_CHECKOUT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -400,6 +411,11 @@ function ReviewAndPay({
           plan,
           intake_token: token,
           customer_email: contactEmail ?? undefined,
+          business_name: businessName,
+          client_name: clientFirstName,
+          client_email: contactEmail ?? "",
+          client_phone: contactPhone,
+          plan_price: String(PLAN_PRICE[plan]),
         }),
       });
       if (!res.ok) throw new Error(`Checkout failed (${res.status})`);
@@ -412,6 +428,8 @@ function ReviewAndPay({
       setLoading(false);
     }
   };
+
+
 
   return (
     <div className="space-y-6">
