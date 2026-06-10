@@ -37,11 +37,6 @@ const PLAN_FEATURES: Record<Plan, { minutes: string; bullets: string[] }> = {
   custom: { minutes: "Custom volume", bullets: ["Tailored to your practice"] },
 };
 
-const TERMS_PLACEHOLDER = `By proceeding you agree to Vektiss's Terms of Service and Privacy Policy.
-Your subscription will renew monthly at the listed price until cancelled.
-Usage above the included minutes is billed at standard overage rates.
-You may cancel at any time from your billing dashboard.`;
-
 const VEKTISS_CHECKOUT =
   "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/create-checkout-test";
 
