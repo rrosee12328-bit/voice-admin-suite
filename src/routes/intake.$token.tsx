@@ -228,6 +228,9 @@ function IntakePage() {
           <ReviewAndPay
             plan={plan}
             contactEmail={contactEmail}
+            businessName={pre.business_name || (row.answers?.business_name as string | undefined) || ""}
+            contactName={(row.answers?.contact_name as string | undefined) ?? null}
+            contactPhone={pre.contact_phone || (row.answers?.primary_phone as string | undefined) || ""}
             token={token}
             reopen={async () => {
               const { error } = await supabase
@@ -238,6 +241,7 @@ function IntakePage() {
               else formQ.refetch();
             }}
           />
+
         ) : (
           <>
             <div className="space-y-6">
