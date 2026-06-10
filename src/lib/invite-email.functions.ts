@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAuthRobust } from "@/lib/require-auth-middleware";
 import { z } from "zod";
 
 const InputSchema = z.object({
@@ -16,7 +16,7 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 export const sendInviteEmail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuthRobust])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
