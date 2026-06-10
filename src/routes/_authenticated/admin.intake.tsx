@@ -21,6 +21,7 @@ import { Copy, Plus, ExternalLink, FileText, FileDown } from "lucide-react";
 import { intakeToMarkdown, intakeToPdf, downloadBlob, type IntakeRow } from "@/lib/intake-export";
 import { formatDistanceToNow } from "date-fns";
 import { InviteClientDialog } from "@/components/invite-client-dialog";
+import { EditDraftIntakeDialog } from "@/components/edit-draft-intake-dialog";
 import { PLAN_LABEL } from "@/lib/plan-gating";
 import type { Plan } from "@/integrations/supabase/app-types";
 
