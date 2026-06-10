@@ -30,14 +30,16 @@ export const sendInviteEmail = createServerFn({ method: "POST" })
       throw new Error("Unauthorized: could not verify caller identity.");
     }
 
-    const { data: isAdmin, error: roleError } = await supabaseAdmin.rpc("has_role", {
-      _user_id: userData.user.id,
-      _role: "admin",
-    });
+    const { data: profile, error: roleError } = await (supabaseAdmin as any)
+      .from("profiles")
+      .select("role")
+      .eq("id", userData.user.id)
+      .maybeSingle();
     if (roleError) {
       throw new Error(`Authorization check failed: ${roleError.message}`);
     }
-    if (!isAdmin) {
+    const role = profile?.role as string | undefined;
+    if (role !== "admin" && role !== "super_admin") {
       throw new Error("Forbidden: admin role required to send invites.");
     }
 
