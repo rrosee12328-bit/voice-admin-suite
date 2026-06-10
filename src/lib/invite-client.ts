@@ -1,7 +1,6 @@
-// Client helper that triggers the Lovable Emails transactional send route.
-// Falls back gracefully if the email infrastructure is not yet configured.
-import { supabase } from "@/integrations/supabase/client-untyped";
+// Client helper that triggers the Resend-powered invite email via a server fn.
 import type { Plan } from "@/integrations/supabase/app-types";
+import { sendInviteEmail } from "@/lib/invite-email.functions";
 
 export type SendInviteArgs = {
   recipientEmail: string;
@@ -11,31 +10,13 @@ export type SendInviteArgs = {
 };
 
 export async function sendClientInvite(args: SendInviteArgs) {
-  const { data: sess } = await supabase.auth.getSession();
-  const token = sess.session?.access_token;
-  if (!token) throw new Error("Not signed in");
-
-  const res = await fetch("/lovable/email/transactional/send", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      templateName: "client-invite",
+  await sendInviteEmail({
+    data: {
       recipientEmail: args.recipientEmail,
-      idempotencyKey: `client-invite-${args.intakeUrl.split("/").pop()}-${Date.now()}`,
-      templateData: {
-        businessName: args.businessName,
-        plan: args.plan,
-        intakeUrl: args.intakeUrl,
-      },
-    }),
+      businessName: args.businessName,
+      plan: args.plan,
+      intakeUrl: args.intakeUrl,
+    },
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Email send failed (${res.status}): ${text.slice(0, 200)}`);
-  }
   return true;
 }
