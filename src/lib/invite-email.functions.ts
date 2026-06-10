@@ -15,30 +15,54 @@ const PLAN_LABELS: Record<string, string> = {
   ai_front_office: "AI Front Office",
 };
 
+// The app's users sign in against the Vektiss Voice backend (same project as
+// src/integrations/supabase/client.ts). Token validation MUST happen against
+// that same project — validating against any other project always fails.
+const VEKTISS_URL = "https://hygmztvpmmyxuomjwrbt.supabase.co";
+const VEKTISS_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
+
 export const sendInviteEmail = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    // Admin bypass: validate the caller via the Supabase Auth API directly
-    // (network call, not local JWKS), so a stale/rotated signing key on the
-    // worker does not block legitimate admins from sending invites.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const baseUrl = process.env.VEKTISS_SUPABASE_URL || VEKTISS_URL;
+    const anonKey = process.env.VEKTISS_SUPABASE_ANON_KEY || VEKTISS_ANON_KEY;
 
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(
-      data.accessToken,
-    );
-    if (userError || !userData?.user) {
+    // Verify the caller's identity against the SAME auth backend that issued
+    // the token (the Vektiss Voice project), via a direct Auth API call.
+    const userRes = await fetch(`${baseUrl}/auth/v1/user`, {
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${data.accessToken}`,
+      },
+    });
+    if (!userRes.ok) {
+      const body = await userRes.text().catch(() => "");
+      console.error(`[sendInviteEmail] auth check failed (${userRes.status}): ${body.slice(0, 300)}`);
+      throw new Error("Unauthorized: could not verify caller identity.");
+    }
+    const user = (await userRes.json()) as { id?: string };
+    if (!user?.id) {
       throw new Error("Unauthorized: could not verify caller identity.");
     }
 
-    const { data: profile, error: roleError } = await (supabaseAdmin as any)
-      .from("profiles")
-      .select("role")
-      .eq("id", userData.user.id)
-      .maybeSingle();
-    if (roleError) {
-      throw new Error(`Authorization check failed: ${roleError.message}`);
+    // Check the admin role in the same project's profiles table, acting as
+    // the caller (RLS applies as that user).
+    const profileRes = await fetch(
+      `${baseUrl}/rest/v1/profiles?id=eq.${user.id}&select=role`,
+      {
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${data.accessToken}`,
+        },
+      },
+    );
+    if (!profileRes.ok) {
+      const body = await profileRes.text().catch(() => "");
+      throw new Error(`Authorization check failed (${profileRes.status}): ${body.slice(0, 300)}`);
     }
-    const role = profile?.role as string | undefined;
+    const rows = (await profileRes.json()) as Array<{ role?: string }>;
+    const role = rows?.[0]?.role;
     if (role !== "admin" && role !== "super_admin") {
       throw new Error("Forbidden: admin role required to send invites.");
     }
