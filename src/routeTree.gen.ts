@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SuccessRouteImport } from './routes/success'
+import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -28,6 +30,16 @@ import { Route as AuthenticatedDashboardCallsIdRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminIntakeIdRouteImport } from './routes/_authenticated/admin.intake.$id'
 import { Route as AuthenticatedAdminClientsSlugRouteImport } from './routes/_authenticated/admin.clients.$slug'
 
+const SuccessRoute = SuccessRouteImport.update({
+  id: '/success',
+  path: '/success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetPasswordRoute = SetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -132,6 +144,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/set-password': typeof SetPasswordRoute
+  '/success': typeof SuccessRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/intake/$token': typeof IntakeTokenRoute
@@ -151,6 +165,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/set-password': typeof SetPasswordRoute
+  '/success': typeof SuccessRoute
   '/intake/$token': typeof IntakeTokenRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
@@ -170,6 +186,8 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/set-password': typeof SetPasswordRoute
+  '/success': typeof SuccessRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/intake/$token': typeof IntakeTokenRoute
@@ -191,6 +209,8 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/pricing'
+    | '/set-password'
+    | '/success'
     | '/admin'
     | '/dashboard'
     | '/intake/$token'
@@ -210,6 +230,8 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/pricing'
+    | '/set-password'
+    | '/success'
     | '/intake/$token'
     | '/admin/analytics'
     | '/admin/intake'
@@ -228,6 +250,8 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/pricing'
+    | '/set-password'
+    | '/success'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/intake/$token'
@@ -249,11 +273,27 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  SetPasswordRoute: typeof SetPasswordRoute
+  SuccessRoute: typeof SuccessRoute
   IntakeTokenRoute: typeof IntakeTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/success': {
+      id: '/success'
+      path: '/success'
+      fullPath: '/success'
+      preLoaderRoute: typeof SuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/set-password': {
+      id: '/set-password'
+      path: '/set-password'
+      fullPath: '/set-password'
+      preLoaderRoute: typeof SetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -470,6 +510,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  SetPasswordRoute: SetPasswordRoute,
+  SuccessRoute: SuccessRoute,
   IntakeTokenRoute: IntakeTokenRoute,
 }
 export const routeTree = rootRouteImport
