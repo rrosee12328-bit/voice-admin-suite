@@ -1,7 +1,7 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { CheckCircle2 } from "lucide-react";
 import vektissLogo from "@/assets/vektiss-logo.png";
-import { Button } from "@/components/ui/button";
+
 
 type SuccessSearch = { email?: string };
 
