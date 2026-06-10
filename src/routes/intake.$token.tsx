@@ -1,10 +1,11 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { INTAKE_SECTIONS, type Question } from "@/lib/intake-questions";
 import type { Plan } from "@/integrations/supabase/app-types";
 import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
+import { TermsOfServiceContent, TOS_VERSION } from "@/lib/terms-of-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
