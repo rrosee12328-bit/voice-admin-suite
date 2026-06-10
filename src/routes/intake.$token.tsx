@@ -1,10 +1,11 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { INTAKE_SECTIONS, type Question } from "@/lib/intake-questions";
 import type { Plan } from "@/integrations/supabase/app-types";
 import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
+import { TermsOfServiceContent, TOS_VERSION } from "@/lib/terms-of-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,11 +36,6 @@ const PLAN_FEATURES: Record<Plan, { minutes: string; bullets: string[] }> = {
   },
   custom: { minutes: "Custom volume", bullets: ["Tailored to your practice"] },
 };
-
-const TERMS_PLACEHOLDER = `By proceeding you agree to Vektiss's Terms of Service and Privacy Policy.
-Your subscription will renew monthly at the listed price until cancelled.
-Usage above the included minutes is billed at standard overage rates.
-You may cancel at any time from your billing dashboard.`;
 
 const VEKTISS_CHECKOUT =
   "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/create-checkout-test";
@@ -374,6 +370,24 @@ function ReviewAndPay({
   reopen: () => void | Promise<void>;
 }) {
   const [agreed, setAgreed] = useState(false);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const tosScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = tosScrollRef.current;
+    if (!el) return;
+    // If not scrollable (e.g. very tall viewport), don't trap the user.
+    if (el.scrollHeight <= el.clientHeight + 8) {
+      setHasScrolledToBottom(true);
+    }
+  }, []);
+
+  const handleTosScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 8) {
+      setHasScrolledToBottom(true);
+    }
+  };
   const [loading, setLoading] = useState(false);
 
   if (!plan) {
@@ -414,7 +428,7 @@ function ReviewAndPay({
             business_name: businessName,
             plan,
             intake_token: token,
-            tos_version: "2.0",
+            tos_version: TOS_VERSION,
           },
         });
         if (tosError) console.warn("log-tos-acceptance failed:", tosError);
@@ -475,16 +489,37 @@ function ReviewAndPay({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Terms & Conditions</CardTitle>
+          <CardTitle className="text-base">Terms &amp; Conditions</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Please read carefully and scroll to the bottom before agreeing.
+          </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="max-h-40 overflow-y-auto whitespace-pre-line rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-            {TERMS_PLACEHOLDER}
+        <CardContent className="space-y-3">
+          <div
+            ref={tosScrollRef}
+            onScroll={handleTosScroll}
+            className="max-h-[480px] overflow-y-auto rounded-md border bg-muted/30 p-4"
+          >
+            <TermsOfServiceContent />
           </div>
-          <label className="flex items-start gap-2 text-sm">
+          {hasScrolledToBottom ? (
+            <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" /> You've reached the end of the Terms.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              ⓘ Scroll to the bottom of the Terms to enable the agreement checkbox.
+            </p>
+          )}
+          <label
+            className={`flex items-start gap-2 text-sm ${
+              hasScrolledToBottom ? "" : "opacity-60"
+            }`}
+          >
             <Checkbox
               checked={agreed}
               onCheckedChange={(c) => setAgreed(c === true)}
+              disabled={!hasScrolledToBottom}
               className="mt-0.5"
             />
             <span>
