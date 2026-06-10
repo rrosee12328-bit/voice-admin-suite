@@ -489,16 +489,37 @@ function ReviewAndPay({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Terms & Conditions</CardTitle>
+          <CardTitle className="text-base">Terms &amp; Conditions</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Please read carefully and scroll to the bottom before agreeing.
+          </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="max-h-40 overflow-y-auto whitespace-pre-line rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-            {TERMS_PLACEHOLDER}
+        <CardContent className="space-y-3">
+          <div
+            ref={tosScrollRef}
+            onScroll={handleTosScroll}
+            className="max-h-[480px] overflow-y-auto rounded-md border bg-muted/30 p-4"
+          >
+            <TermsOfServiceContent />
           </div>
-          <label className="flex items-start gap-2 text-sm">
+          {hasScrolledToBottom ? (
+            <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" /> You've reached the end of the Terms.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              ⓘ Scroll to the bottom of the Terms to enable the agreement checkbox.
+            </p>
+          )}
+          <label
+            className={`flex items-start gap-2 text-sm ${
+              hasScrolledToBottom ? "" : "opacity-60"
+            }`}
+          >
             <Checkbox
               checked={agreed}
               onCheckedChange={(c) => setAgreed(c === true)}
+              disabled={!hasScrolledToBottom}
               className="mt-0.5"
             />
             <span>
