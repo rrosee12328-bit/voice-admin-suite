@@ -29,6 +29,8 @@ type PlanDef = {
   name: string;
   price: string;
   priceSuffix?: string;
+  tagline?: string;
+  allowance?: string;
   features: string[];
   popular?: boolean;
 };
@@ -39,14 +41,34 @@ const PLANS: PlanDef[] = [
     name: "Phone Starter",
     price: "$45.99",
     priceSuffix: "/mo",
-    features: ["AI phone answering", "Call routing", "Voicemail transcription"],
+    tagline: "Best for solo operators",
+    allowance: "60 phone minutes/mo",
+    features: [
+      "24/7 AI receptionist",
+      "Smart call routing",
+      "After-hours handling",
+      "Spam blocking",
+      "Call recordings + summaries",
+      "Email alerts after every call",
+      "Done-for-you setup",
+      "30-day money-back guarantee",
+    ],
   },
   {
     id: "phone_email",
     name: "Phone + Email",
     price: "$89.99",
     priceSuffix: "/mo",
-    features: ["Everything in Phone Starter", "AI email responses"],
+    tagline: "Best for growing teams",
+    allowance: "200 minutes + 200 emails/mo",
+    features: [
+      "Everything in Phone Starter, plus:",
+      "Intake form delivery",
+      "Email AI assistant",
+      "Analytics dashboard",
+      "Full call transcripts",
+      "Monthly performance report",
+    ],
     popular: true,
   },
   {
@@ -54,7 +76,17 @@ const PLANS: PlanDef[] = [
     name: "AI Front Office",
     price: "$199.99",
     priceSuffix: "/mo",
-    features: ["Everything in Phone + Email", "Full front office automation", "Priority support"],
+    tagline: "Best for established businesses scaling",
+    allowance: "500 minutes + 500 emails/mo",
+    features: [
+      "Everything in Phone + Email, plus:",
+      "Lead scoring (Hot / Warm / Cold)",
+      "Calendar sync (Google + Outlook)",
+      "Bilingual support (EN / ES)",
+      "Auto follow-up emails",
+      "Caller memory",
+      "Priority support",
+    ],
   },
   {
     id: "custom",
@@ -290,6 +322,16 @@ function GetStartedPage() {
                         <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
                       )}
                     </div>
+                    {(plan.tagline || plan.allowance) && (
+                      <div className="mt-2 space-y-0.5">
+                        {plan.tagline && (
+                          <p className="text-xs text-muted-foreground">{plan.tagline}</p>
+                        )}
+                        {plan.allowance && (
+                          <p className="text-xs font-medium text-primary">{plan.allowance}</p>
+                        )}
+                      </div>
+                    )}
                     <ul className="mt-5 flex-1 space-y-2">
                       {plan.features.map((f) => (
                         <li key={f} className="flex items-start gap-2 text-sm">
