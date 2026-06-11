@@ -126,6 +126,67 @@ const UserIdSchema = z.object({
   accessToken: z.string().min(10).max(4096),
 });
 
+const TenantAccountSchema = z.object({
+  tenantId: z.string().uuid(),
+  accessToken: z.string().min(10).max(4096),
+});
+
+export const getClientAccountForTenant = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => TenantAccountSchema.parse(input))
+  .handler(async ({ data }) => {
+    await requireSuperAdmin(data.accessToken);
+    const { baseUrl, serviceKey } = vektissEnv();
+    if (!serviceKey) {
+      throw new Error(
+        "Reading client account details requires VEKTISS_SUPABASE_SERVICE_ROLE_KEY in project secrets.",
+      );
+    }
+
+    const profileRes = await fetch(
+      `${baseUrl}/rest/v1/profiles?tenant_id=eq.${data.tenantId}&select=id,tenant_id,role,full_name,name,email&order=role.asc&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    if (!profileRes.ok) {
+      const text = await profileRes.text().catch(() => "");
+      throw new Error(`Profile read failed (${profileRes.status}): ${text.slice(0, 300)}`);
+    }
+    const profiles = (await profileRes.json()) as Array<{
+      id: string;
+      tenant_id: string | null;
+      role: string | null;
+      full_name: string | null;
+      name: string | null;
+      email: string | null;
+    }>;
+    const profile = profiles[0] ?? null;
+    if (!profile?.id) return { profile: null, auth: null };
+
+    const authRes = await fetch(`${baseUrl}/auth/v1/admin/users/${profile.id}`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    if (!authRes.ok) {
+      const text = await authRes.text().catch(() => "");
+      throw new Error(`Auth read failed (${authRes.status}): ${text.slice(0, 300)}`);
+    }
+    const u = (await authRes.json()) as {
+      email?: string | null;
+      phone?: string | null;
+      email_confirmed_at?: string | null;
+      phone_confirmed_at?: string | null;
+      last_sign_in_at?: string | null;
+    };
+    return {
+      profile,
+      auth: {
+        email: u.email ?? profile.email ?? null,
+        phone: u.phone ?? null,
+        emailConfirmedAt: u.email_confirmed_at ?? null,
+        phoneConfirmedAt: u.phone_confirmed_at ?? null,
+        lastSignInAt: u.last_sign_in_at ?? null,
+      },
+    };
+  });
+
 export const getClientAuthInfo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => UserIdSchema.parse(input))
   .handler(async ({ data }) => {
