@@ -14,7 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/empty-state";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { sendClientPasswordReset, updateClientEmail } from "@/lib/admin-user.functions";
+import {
+  sendClientPasswordReset,
+  updateClientEmail,
+  updateClientPhone,
+  getClientAuthInfo,
+} from "@/lib/admin-user.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$slug")({
   component: AdminClientView,
