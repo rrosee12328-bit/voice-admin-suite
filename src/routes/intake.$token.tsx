@@ -357,6 +357,9 @@ function QuestionField({
 
 function ReviewAndPay({
   plan,
+  customPrice,
+  customMinutes,
+  customLabel,
   contactEmail,
   businessName,
   contactName,
@@ -365,6 +368,9 @@ function ReviewAndPay({
   reopen,
 }: {
   plan: Plan | null;
+  customPrice: number | null;
+  customMinutes: number | null;
+  customLabel: string | null;
   contactEmail: string | null;
   businessName: string;
   contactName: string | null;
@@ -393,7 +399,10 @@ function ReviewAndPay({
   };
   const [loading, setLoading] = useState(false);
 
-  if (!plan) {
+  // A custom plan is "ready to pay" only when the admin has set a price.
+  const customReady = plan === "custom" && customPrice != null && customPrice > 0;
+
+  if (!plan || (plan === "custom" && !customReady)) {
     return (
       <Card>
         <CardHeader>
@@ -415,7 +424,19 @@ function ReviewAndPay({
     );
   }
 
-  const features = PLAN_FEATURES[plan];
+  const isCustom = plan === "custom";
+  const displayLabel = isCustom ? (customLabel || "Custom Plan") : PLAN_LABEL[plan];
+  const displayPrice = isCustom ? (customPrice as number) : PLAN_PRICE[plan];
+  const features = isCustom
+    ? {
+        minutes: `${customMinutes ?? 0} minutes/month included`,
+        bullets: [
+          "Tailored to your business",
+          "Custom call handling & integrations",
+          "Priority support",
+        ],
+      }
+    : PLAN_FEATURES[plan];
 
   const handlePay = async () => {
     setLoading(true);
