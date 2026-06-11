@@ -274,6 +274,7 @@ function ClientSettingsView({
       </section>
 
       <PrimaryAccountSection
+        tenant={tenant}
         primaryUser={primaryUser}
         accountAuth={accountAuth}
         intakeContact={intakeContact}
@@ -284,11 +285,13 @@ function ClientSettingsView({
 }
 
 function PrimaryAccountSection({
+  tenant,
   primaryUser,
   accountAuth,
   intakeContact,
   onContactUpdated,
 }: {
+  tenant: Tenant;
   primaryUser: Profile | null;
   accountAuth: AccountAuth | null;
   intakeContact: IntakeContact | null;
