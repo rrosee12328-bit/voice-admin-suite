@@ -114,7 +114,7 @@ function formatPhoneInput(value: string): string {
 }
 
 function GetStartedPage() {
-  const [selected, setSelected] = useState<PlanId>("phone_email");
+  const [selected, setSelected] = useState<PlanId>("ai_front_office");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [businessName, setBusinessName] = useState("");
