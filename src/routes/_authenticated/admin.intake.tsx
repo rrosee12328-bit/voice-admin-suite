@@ -208,6 +208,7 @@ function IntakeListPage() {
                       </div>
                     </div>
                     {row.status !== "submitted" && <EditDraftIntakeDialog row={row} />}
+                    <SetCustomPlanDialog row={row} />
                     <Button size="sm" variant="outline" onClick={() => copyLink(link)}>
                       <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy link
                     </Button>
