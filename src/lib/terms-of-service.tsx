@@ -1,4 +1,4 @@
-export const TOS_VERSION = "2026-06-10";
+export const TOS_VERSION = "2026-06-11";
 
 export function TermsOfServiceContent() {
   return (
