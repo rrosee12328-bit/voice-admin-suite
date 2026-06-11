@@ -195,7 +195,7 @@ function GetStartedPage() {
 
       if (selected === "custom") {
         const url = `https://calendly.com/vektiss-info/30-minute-vektiss-discovery?name=${encodeURIComponent(
-          fullName,
+          contactName,
         )}&email=${encodeURIComponent(email)}`;
         window.location.href = url;
         return;
