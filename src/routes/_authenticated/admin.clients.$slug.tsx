@@ -279,8 +279,8 @@ function PrimaryAccountSection({
     },
   });
 
-  const authEmail = authQ.data?.email ?? primaryUser?.email ?? "";
-  const authPhone = authQ.data?.phone ?? "";
+  const authEmail = authQ.data?.email ?? primaryUser?.email ?? intakeContact?.email ?? "";
+  const authPhone = authQ.data?.phone ?? intakeContact?.phone ?? "";
 
   const [email, setEmail] = useState(authEmail);
   const [phone, setPhone] = useState(authPhone);
@@ -289,17 +289,15 @@ function PrimaryAccountSection({
   const [savePhoneLoading, setSavePhoneLoading] = useState(false);
 
   useEffect(() => {
-    if (authQ.data) {
-      setEmail(authQ.data.email ?? "");
-      setPhone(authQ.data.phone ?? "");
-    }
-  }, [authQ.data]);
+    setEmail(authEmail);
+    setPhone(authPhone);
+  }, [authEmail, authPhone]);
 
-  if (!primaryUser) {
+  if (!primaryUser && !intakeContact) {
     return (
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Primary account on file</h2>
-        <p className="text-sm text-muted-foreground">No user has accepted the workspace invite yet.</p>
+        <p className="text-sm text-muted-foreground">No user or intake contact is linked to this workspace yet.</p>
       </section>
     );
   }
@@ -347,12 +345,22 @@ function PrimaryAccountSection({
     if (!next || next === authEmail) return;
     setSaveEmailLoading(true);
     try {
-      const accessToken = await getToken();
-      await updateClientEmail({
-        data: { userId: primaryUser.id, newEmail: next, accessToken },
-      });
-      toast.success("Email updated and password reset sent.");
-      await authQ.refetch();
+      if (primaryUser) {
+        const accessToken = await getToken();
+        await updateClientEmail({
+          data: { userId: primaryUser.id, newEmail: next, accessToken },
+        });
+        toast.success("Email updated and password reset sent.");
+        await authQ.refetch();
+      } else if (intakeContact) {
+        const { error } = await supabase
+          .from("intake_forms")
+          .update({ answers: { ...intakeContact.answers, __contact_email: next } })
+          .eq("id", intakeContact.id);
+        if (error) throw error;
+        toast.success("Email on file updated.");
+        onContactUpdated();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update email.");
     } finally {
@@ -365,12 +373,25 @@ function PrimaryAccountSection({
     if (next === authPhone.trim()) return;
     setSavePhoneLoading(true);
     try {
-      const accessToken = await getToken();
-      const result = await updateClientPhone({
-        data: { userId: primaryUser.id, newPhone: next, accessToken },
-      });
-      toast.success(result.phone ? "Phone number updated." : "Phone number removed.");
-      await authQ.refetch();
+      if (primaryUser) {
+        const accessToken = await getToken();
+        const result = await updateClientPhone({
+          data: { userId: primaryUser.id, newPhone: next, accessToken },
+        });
+        toast.success(result.phone ? "Phone number updated." : "Phone number removed.");
+        await authQ.refetch();
+      } else if (intakeContact) {
+        const { error } = await supabase
+          .from("intake_forms")
+          .update({
+            contact_phone: next || null,
+            answers: { ...intakeContact.answers, primary_phone: next },
+          })
+          .eq("id", intakeContact.id);
+        if (error) throw error;
+        toast.success(next ? "Phone number updated." : "Phone number removed.");
+        onContactUpdated();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update phone.");
     } finally {
