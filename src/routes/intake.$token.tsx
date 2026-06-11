@@ -494,9 +494,9 @@ function ReviewAndPay({
       <Card className="border-primary/30">
         <CardHeader>
           <CardTitle className="flex flex-wrap items-baseline justify-between gap-2 text-lg">
-            <span>{PLAN_LABEL[plan]}</span>
+            <span>{displayLabel}</span>
             <span className="text-base font-medium text-muted-foreground">
-              ${PLAN_PRICE[plan]}/mo
+              ${displayPrice}/mo
             </span>
           </CardTitle>
           <p className="text-sm text-muted-foreground">{features.minutes}</p>
