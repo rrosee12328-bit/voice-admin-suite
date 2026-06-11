@@ -389,7 +389,24 @@ function PrimaryAccountSection({
           .update({ answers: { ...intakeContact.answers, __contact_email: next } })
           .eq("id", intakeContact.id);
         if (error) throw error;
-        toast.success("Email on file updated.");
+        const accessToken = await getToken();
+        await createOrUpdateClientAccountForTenant({
+          data: {
+            tenantId: tenant.id,
+            email: next,
+            phone,
+            name: intakeContact.businessName ?? tenant.name,
+            accessToken,
+          },
+        });
+        toast.success("Client account linked and password reset sent.");
+        onContactUpdated();
+      } else {
+        const accessToken = await getToken();
+        await createOrUpdateClientAccountForTenant({
+          data: { tenantId: tenant.id, email: next, phone, name: tenant.name, accessToken },
+        });
+        toast.success("Client account created and password reset sent.");
         onContactUpdated();
       }
     } catch (err) {
@@ -420,6 +437,13 @@ function PrimaryAccountSection({
           })
           .eq("id", intakeContact.id);
         if (error) throw error;
+        toast.success(next ? "Phone number updated." : "Phone number removed.");
+        onContactUpdated();
+      } else if (authEmail) {
+        const accessToken = await getToken();
+        await createOrUpdateClientAccountForTenant({
+          data: { tenantId: tenant.id, email: authEmail, phone: next, name: tenant.name, accessToken },
+        });
         toast.success(next ? "Phone number updated." : "Phone number removed.");
         onContactUpdated();
       }
