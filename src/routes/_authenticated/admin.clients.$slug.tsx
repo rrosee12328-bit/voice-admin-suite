@@ -48,6 +48,7 @@ function textAnswer(answers: Record<string, unknown>, key: string) {
 
 function AdminClientView() {
   const { slug } = Route.useParams();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState("dashboard");
 
   const { data: tenant, isLoading } = useQuery({
@@ -76,6 +77,39 @@ function AdminClientView() {
         .maybeSingle<Profile>();
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: intakeContact } = useQuery({
+    queryKey: ["tenant-intake-contact", tenant?.id, tenant?.name, tenant?.slug],
+    enabled: !!tenant?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("intake_forms")
+        .select("id,business_name,contact_phone,answers,created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const targetName = normalizeClientName(tenant?.name);
+      const targetSlug = normalizeClientName(tenant?.slug);
+      const rows = ((data ?? []) as Array<{
+        id: string;
+        business_name: string | null;
+        contact_phone: string | null;
+        answers: Record<string, unknown> | null;
+      }>).map((row) => {
+        const answers = row.answers ?? {};
+        return {
+          id: row.id,
+          businessName: row.business_name,
+          email: textAnswer(answers, "__contact_email"),
+          phone: row.contact_phone || textAnswer(answers, "primary_phone"),
+          answers,
+        } satisfies IntakeContact;
+      });
+      return rows.find((row) => {
+        const rowName = normalizeClientName(row.businessName || textAnswer(row.answers, "business_name"));
+        return rowName === targetName || rowName === targetSlug;
+      }) ?? null;
     },
   });
 
@@ -133,7 +167,14 @@ function AdminClientView() {
         </TabsContent>
 
         <TabsContent value="settings" className="mt-0">
-          <ClientSettingsView tenant={tenant} primaryUser={primaryUser ?? null} />
+          <ClientSettingsView
+            tenant={tenant}
+            primaryUser={primaryUser ?? null}
+            intakeContact={intakeContact ?? null}
+            onContactUpdated={() => {
+              queryClient.invalidateQueries({ queryKey: ["tenant-intake-contact", tenant.id] });
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="billing" className="mt-0">
