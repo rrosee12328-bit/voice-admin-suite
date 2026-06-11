@@ -272,6 +272,13 @@ export function SendIntakeLinkDialog({ row }: { row: IntakeRow }) {
               "Save plan only"
             )}
           </Button>
+          <Button
+            variant="secondary"
+            onClick={handlePreview}
+            disabled={savePlan.isPending || sending}
+          >
+            <Eye className="mr-2 h-4 w-4" /> Save & preview checkout
+          </Button>
           <Button onClick={handleSend} disabled={sending || savePlan.isPending}>
             {sending ? (
               <>
