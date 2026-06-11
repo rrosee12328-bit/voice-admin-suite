@@ -20,6 +20,7 @@ import {
   updateClientPhone,
   getClientAuthInfo,
   getClientAccountForTenant,
+  createOrUpdateClientAccountForTenant,
 } from "@/lib/admin-user.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$slug")({
