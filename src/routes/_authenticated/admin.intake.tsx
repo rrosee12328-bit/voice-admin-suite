@@ -22,6 +22,7 @@ import { intakeToMarkdown, intakeToPdf, downloadBlob, type IntakeRow } from "@/l
 import { formatDistanceToNow } from "date-fns";
 import { InviteClientDialog } from "@/components/invite-client-dialog";
 import { EditDraftIntakeDialog } from "@/components/edit-draft-intake-dialog";
+import { SetCustomPlanDialog } from "@/components/set-custom-plan-dialog";
 import { PLAN_LABEL } from "@/lib/plan-gating";
 import type { Plan } from "@/integrations/supabase/app-types";
 
