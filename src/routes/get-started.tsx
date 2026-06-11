@@ -309,7 +309,7 @@ function GetStartedPage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-6 md:grid-cols-3 md:items-start">
+            <div className="grid gap-6 md:grid-cols-3 items-stretch">
               {PLANS.map((plan) => {
                 const isSelected = selected === plan.id;
                 const Icon = plan.icon;
@@ -359,7 +359,7 @@ function GetStartedPage() {
                     <div className="my-6 border-t border-border" />
 
                     {plan.allowance && (
-                      <div className="rounded-xl bg-accent p-4">
+                      <div className="rounded-xl border border-primary/15 bg-primary/10 p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Includes
                         </p>
@@ -370,7 +370,7 @@ function GetStartedPage() {
                     )}
 
                     {plan.bestFor && (
-                      <div className="mt-3 rounded-xl bg-accent p-4">
+                      <div className="mt-3 rounded-xl border border-primary/15 bg-primary/10 p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Best for
                         </p>
