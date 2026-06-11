@@ -127,6 +127,16 @@ export function SendIntakeLinkDialog({ row }: { row: IntakeRow }) {
     }
   };
 
+  const handlePreview = async () => {
+    try {
+      await savePlan.mutateAsync();
+      window.open(link, "_blank", "noopener,noreferrer");
+      toast.success("Plan saved — opened intake in a new tab so you can test checkout");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save plan");
+    }
+  };
+
   const planSummary =
     form.plan === "custom"
       ? `${form.custom_label || "Custom Plan"}${form.custom_price ? ` — $${form.custom_price}/mo` : ""}`
