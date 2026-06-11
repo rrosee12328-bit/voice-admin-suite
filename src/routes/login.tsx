@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -86,9 +86,15 @@ function LoginPage() {
             </Button>
           </form>
         </div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Powered by Vektiss
-        </p>
+        <div className="mt-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            New to Vektiss?{" "}
+            <Link to="/get-started" className="font-medium text-foreground underline-offset-4 hover:underline">
+              Get Started
+            </Link>
+          </p>
+          <p className="mt-3 text-xs text-muted-foreground">Powered by Vektiss</p>
+        </div>
       </div>
     </div>
   );
