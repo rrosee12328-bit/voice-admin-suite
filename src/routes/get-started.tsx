@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useCallback, useEffect } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Phone, Mail, Sparkles, Plus } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import vektissLogo from "@/assets/vektiss-logo.png";
