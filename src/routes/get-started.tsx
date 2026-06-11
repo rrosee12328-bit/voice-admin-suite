@@ -194,7 +194,6 @@ function GetStartedPage() {
       const token = data!.token as string;
 
       if (selected === "custom") {
-        const fullName = `${firstName} ${lastName}`.trim();
         const url = `https://calendly.com/vektiss-info/30-minute-vektiss-discovery?name=${encodeURIComponent(
           fullName,
         )}&email=${encodeURIComponent(email)}`;
