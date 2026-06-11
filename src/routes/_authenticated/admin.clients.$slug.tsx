@@ -19,6 +19,7 @@ import {
   updateClientEmail,
   updateClientPhone,
   getClientAuthInfo,
+  getClientAccountForTenant,
 } from "@/lib/admin-user.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$slug")({
@@ -77,6 +78,17 @@ function AdminClientView() {
         .maybeSingle<Profile>();
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: adminAccount } = useQuery({
+    queryKey: ["client-account-for-tenant", tenant?.id],
+    enabled: !!tenant?.id,
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Your session has expired. Sign in again.");
+      return await getClientAccountForTenant({ data: { tenantId: tenant!.id, accessToken: token } });
     },
   });
 
@@ -169,10 +181,12 @@ function AdminClientView() {
         <TabsContent value="settings" className="mt-0">
           <ClientSettingsView
             tenant={tenant}
-            primaryUser={primaryUser ?? null}
+            primaryUser={adminAccount?.profile ?? primaryUser ?? null}
+            accountAuth={adminAccount?.auth ?? null}
             intakeContact={intakeContact ?? null}
             onContactUpdated={() => {
               queryClient.invalidateQueries({ queryKey: ["tenant-intake-contact", tenant.id] });
+              queryClient.invalidateQueries({ queryKey: ["client-account-for-tenant", tenant.id] });
             }}
           />
         </TabsContent>
