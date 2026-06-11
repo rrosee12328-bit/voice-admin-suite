@@ -108,7 +108,7 @@ const PLANS: PlanDef[] = [
 
 function PricingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#EEF4FB] text-foreground">
       <div className="mx-auto max-w-6xl px-6 py-20">
         <div className="mb-14 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
