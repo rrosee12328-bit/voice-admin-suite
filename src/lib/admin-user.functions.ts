@@ -183,8 +183,17 @@ export const getClientAccountForTenant = createServerFn({ method: "POST" })
       headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
     });
     if (!authRes.ok) {
-      const text = await authRes.text().catch(() => "");
-      throw new Error(`Auth read failed (${authRes.status}): ${text.slice(0, 300)}`);
+      return {
+        profile: {
+          id: profile.id,
+          tenant_id: profile.tenant_id,
+          role: profile.role ?? "client_admin",
+          full_name: profile.full_name,
+          name: profile.name,
+          email: profile.email,
+        },
+        auth: null,
+      };
     }
     const u = (await authRes.json()) as {
       email?: string | null;
@@ -341,8 +350,13 @@ export const getClientAuthInfo = createServerFn({ method: "POST" })
       headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`Auth read failed (${res.status}): ${text.slice(0, 300)}`);
+      return {
+        email: null,
+        phone: null,
+        emailConfirmedAt: null,
+        phoneConfirmedAt: null,
+        lastSignInAt: null,
+      };
     }
     const u = (await res.json()) as {
       email?: string | null;
