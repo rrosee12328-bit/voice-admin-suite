@@ -176,7 +176,14 @@ export const getClientAccountForTenant = createServerFn({ method: "POST" })
       last_sign_in_at?: string | null;
     };
     return {
-      profile,
+      profile: {
+        id: profile.id,
+        tenant_id: profile.tenant_id,
+        role: profile.role ?? "client_admin",
+        full_name: profile.full_name,
+        name: profile.name,
+        email: profile.email,
+      },
       auth: {
         email: u.email ?? profile.email ?? null,
         phone: u.phone ?? null,
