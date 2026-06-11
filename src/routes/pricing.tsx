@@ -135,31 +135,43 @@ function PricingPage() {
               )}
 
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-3xl font-bold">{plan.price}</span>
+                <span className="text-3xl font-bold tracking-tight">{plan.price}</span>
                 {plan.priceSuffix && (
                   <span className="text-muted-foreground">{plan.priceSuffix}</span>
                 )}
               </div>
 
-              <div className="mt-3 space-y-1">
-                {plan.allowance && (
-                  <p className="text-xs font-medium text-primary">{plan.allowance}</p>
-                )}
-                {plan.bestFor && (
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">Best for:</span> {plan.bestFor}
+              {plan.allowance && (
+                <div className="mt-5">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Includes
                   </p>
-                )}
-              </div>
+                  <p className="mt-1 text-sm font-medium text-foreground">{plan.allowance}</p>
+                </div>
+              )}
 
-              <ul className="mt-6 flex-1 space-y-2.5">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
+              {plan.bestFor && (
+                <div className="mt-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Best for
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">{plan.bestFor}</p>
+                </div>
+              )}
+
+              <div className="mt-5 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  What's included
+                </p>
+                <ul className="mt-2 space-y-2.5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
               {plan.overage && (
                 <p className="mt-5 border-t border-border pt-3 text-xs text-muted-foreground">
