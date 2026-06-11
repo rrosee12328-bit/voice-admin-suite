@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ArrowLeft, Eye, ExternalLink, Loader2, Mail, Receipt } from "lucide-react";
@@ -29,8 +29,26 @@ const VEKTISS_FN = "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1";
 const VEKTISS_ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
 
+type IntakeContact = {
+  id: string;
+  businessName: string | null;
+  email: string | null;
+  phone: string | null;
+  answers: Record<string, unknown>;
+};
+
+function normalizeClientName(value: string | null | undefined) {
+  return (value ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+}
+
+function textAnswer(answers: Record<string, unknown>, key: string) {
+  const value = answers[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 function AdminClientView() {
   const { slug } = Route.useParams();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState("dashboard");
 
   const { data: tenant, isLoading } = useQuery({
@@ -59,6 +77,39 @@ function AdminClientView() {
         .maybeSingle<Profile>();
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: intakeContact } = useQuery({
+    queryKey: ["tenant-intake-contact", tenant?.id, tenant?.name, tenant?.slug],
+    enabled: !!tenant?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("intake_forms")
+        .select("id,business_name,contact_phone,answers,created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const targetName = normalizeClientName(tenant?.name);
+      const targetSlug = normalizeClientName(tenant?.slug);
+      const rows = ((data ?? []) as Array<{
+        id: string;
+        business_name: string | null;
+        contact_phone: string | null;
+        answers: Record<string, unknown> | null;
+      }>).map((row) => {
+        const answers = row.answers ?? {};
+        return {
+          id: row.id,
+          businessName: row.business_name,
+          email: textAnswer(answers, "__contact_email"),
+          phone: row.contact_phone || textAnswer(answers, "primary_phone"),
+          answers,
+        } satisfies IntakeContact;
+      });
+      return rows.find((row) => {
+        const rowName = normalizeClientName(row.businessName || textAnswer(row.answers, "business_name"));
+        return rowName === targetName || rowName === targetSlug;
+      }) ?? null;
     },
   });
 
@@ -116,7 +167,14 @@ function AdminClientView() {
         </TabsContent>
 
         <TabsContent value="settings" className="mt-0">
-          <ClientSettingsView tenant={tenant} primaryUser={primaryUser ?? null} />
+          <ClientSettingsView
+            tenant={tenant}
+            primaryUser={primaryUser ?? null}
+            intakeContact={intakeContact ?? null}
+            onContactUpdated={() => {
+              queryClient.invalidateQueries({ queryKey: ["tenant-intake-contact", tenant.id] });
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="billing" className="mt-0">
@@ -127,7 +185,17 @@ function AdminClientView() {
   );
 }
 
-function ClientSettingsView({ tenant, primaryUser }: { tenant: Tenant; primaryUser: Profile | null }) {
+function ClientSettingsView({
+  tenant,
+  primaryUser,
+  intakeContact,
+  onContactUpdated,
+}: {
+  tenant: Tenant;
+  primaryUser: Profile | null;
+  intakeContact: IntakeContact | null;
+  onContactUpdated: () => void;
+}) {
   const plan = tenant.plan ?? "phone_starter";
 
   return (
@@ -180,12 +248,24 @@ function ClientSettingsView({ tenant, primaryUser }: { tenant: Tenant; primaryUs
         </div>
       </section>
 
-      <PrimaryAccountSection primaryUser={primaryUser} />
+      <PrimaryAccountSection
+        primaryUser={primaryUser}
+        intakeContact={intakeContact}
+        onContactUpdated={onContactUpdated}
+      />
     </div>
   );
 }
 
-function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null }) {
+function PrimaryAccountSection({
+  primaryUser,
+  intakeContact,
+  onContactUpdated,
+}: {
+  primaryUser: Profile | null;
+  intakeContact: IntakeContact | null;
+  onContactUpdated: () => void;
+}) {
   const userId = primaryUser?.id ?? null;
 
   const authQ = useQuery({
@@ -199,8 +279,8 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
     },
   });
 
-  const authEmail = authQ.data?.email ?? primaryUser?.email ?? "";
-  const authPhone = authQ.data?.phone ?? "";
+  const authEmail = authQ.data?.email ?? primaryUser?.email ?? intakeContact?.email ?? "";
+  const authPhone = authQ.data?.phone ?? intakeContact?.phone ?? "";
 
   const [email, setEmail] = useState(authEmail);
   const [phone, setPhone] = useState(authPhone);
@@ -209,17 +289,15 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
   const [savePhoneLoading, setSavePhoneLoading] = useState(false);
 
   useEffect(() => {
-    if (authQ.data) {
-      setEmail(authQ.data.email ?? "");
-      setPhone(authQ.data.phone ?? "");
-    }
-  }, [authQ.data]);
+    setEmail(authEmail);
+    setPhone(authPhone);
+  }, [authEmail, authPhone]);
 
-  if (!primaryUser) {
+  if (!primaryUser && !intakeContact) {
     return (
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Primary account on file</h2>
-        <p className="text-sm text-muted-foreground">No user has accepted the workspace invite yet.</p>
+        <p className="text-sm text-muted-foreground">No user or intake contact is linked to this workspace yet.</p>
       </section>
     );
   }
@@ -267,12 +345,22 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
     if (!next || next === authEmail) return;
     setSaveEmailLoading(true);
     try {
-      const accessToken = await getToken();
-      await updateClientEmail({
-        data: { userId: primaryUser.id, newEmail: next, accessToken },
-      });
-      toast.success("Email updated and password reset sent.");
-      await authQ.refetch();
+      if (primaryUser) {
+        const accessToken = await getToken();
+        await updateClientEmail({
+          data: { userId: primaryUser.id, newEmail: next, accessToken },
+        });
+        toast.success("Email updated and password reset sent.");
+        await authQ.refetch();
+      } else if (intakeContact) {
+        const { error } = await supabase
+          .from("intake_forms")
+          .update({ answers: { ...intakeContact.answers, __contact_email: next } })
+          .eq("id", intakeContact.id);
+        if (error) throw error;
+        toast.success("Email on file updated.");
+        onContactUpdated();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update email.");
     } finally {
@@ -285,12 +373,25 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
     if (next === authPhone.trim()) return;
     setSavePhoneLoading(true);
     try {
-      const accessToken = await getToken();
-      const result = await updateClientPhone({
-        data: { userId: primaryUser.id, newPhone: next, accessToken },
-      });
-      toast.success(result.phone ? "Phone number updated." : "Phone number removed.");
-      await authQ.refetch();
+      if (primaryUser) {
+        const accessToken = await getToken();
+        const result = await updateClientPhone({
+          data: { userId: primaryUser.id, newPhone: next, accessToken },
+        });
+        toast.success(result.phone ? "Phone number updated." : "Phone number removed.");
+        await authQ.refetch();
+      } else if (intakeContact) {
+        const { error } = await supabase
+          .from("intake_forms")
+          .update({
+            contact_phone: next || null,
+            answers: { ...intakeContact.answers, primary_phone: next },
+          })
+          .eq("id", intakeContact.id);
+        if (error) throw error;
+        toast.success(next ? "Phone number updated." : "Phone number removed.");
+        onContactUpdated();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update phone.");
     } finally {
@@ -303,18 +404,18 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold">Primary account on file</h2>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize">
-          {(primaryUser.role ?? "client").replace(/_/g, " ")}
+          {primaryUser ? (primaryUser.role ?? "client").replace(/_/g, " ") : "intake contact"}
         </span>
       </div>
 
       <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs text-muted-foreground">Name</dt>
-          <dd className="mt-1">{primaryUser.name || primaryUser.full_name || "—"}</dd>
+          <dd className="mt-1">{primaryUser?.name || primaryUser?.full_name || intakeContact?.businessName || "—"}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">User ID</dt>
-          <dd className="mt-1 font-mono text-xs truncate">{primaryUser.id}</dd>
+          <dt className="text-xs text-muted-foreground">Record ID</dt>
+          <dd className="mt-1 font-mono text-xs truncate">{primaryUser?.id || intakeContact?.id || "—"}</dd>
         </div>
       </dl>
 
