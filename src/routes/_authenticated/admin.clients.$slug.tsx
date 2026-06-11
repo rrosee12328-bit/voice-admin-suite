@@ -19,6 +19,8 @@ import {
   updateClientEmail,
   updateClientPhone,
   getClientAuthInfo,
+  getClientAccountForTenant,
+  createOrUpdateClientAccountForTenant,
 } from "@/lib/admin-user.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$slug")({
@@ -35,6 +37,14 @@ type IntakeContact = {
   email: string | null;
   phone: string | null;
   answers: Record<string, unknown>;
+};
+
+type AccountAuth = {
+  email: string | null;
+  phone: string | null;
+  emailConfirmedAt: string | null;
+  phoneConfirmedAt: string | null;
+  lastSignInAt: string | null;
 };
 
 function normalizeClientName(value: string | null | undefined) {
@@ -77,6 +87,17 @@ function AdminClientView() {
         .maybeSingle<Profile>();
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: adminAccount } = useQuery({
+    queryKey: ["client-account-for-tenant", tenant?.id],
+    enabled: !!tenant?.id,
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Your session has expired. Sign in again.");
+      return await getClientAccountForTenant({ data: { tenantId: tenant!.id, accessToken: token } });
     },
   });
 
@@ -169,10 +190,12 @@ function AdminClientView() {
         <TabsContent value="settings" className="mt-0">
           <ClientSettingsView
             tenant={tenant}
-            primaryUser={primaryUser ?? null}
+            primaryUser={adminAccount?.profile ?? primaryUser ?? null}
+            accountAuth={adminAccount?.auth ?? null}
             intakeContact={intakeContact ?? null}
             onContactUpdated={() => {
               queryClient.invalidateQueries({ queryKey: ["tenant-intake-contact", tenant.id] });
+              queryClient.invalidateQueries({ queryKey: ["client-account-for-tenant", tenant.id] });
             }}
           />
         </TabsContent>
@@ -188,11 +211,13 @@ function AdminClientView() {
 function ClientSettingsView({
   tenant,
   primaryUser,
+  accountAuth,
   intakeContact,
   onContactUpdated,
 }: {
   tenant: Tenant;
   primaryUser: Profile | null;
+  accountAuth: AccountAuth | null;
   intakeContact: IntakeContact | null;
   onContactUpdated: () => void;
 }) {
@@ -249,7 +274,9 @@ function ClientSettingsView({
       </section>
 
       <PrimaryAccountSection
+        tenant={tenant}
         primaryUser={primaryUser}
+        accountAuth={accountAuth}
         intakeContact={intakeContact}
         onContactUpdated={onContactUpdated}
       />
@@ -258,11 +285,15 @@ function ClientSettingsView({
 }
 
 function PrimaryAccountSection({
+  tenant,
   primaryUser,
+  accountAuth,
   intakeContact,
   onContactUpdated,
 }: {
+  tenant: Tenant;
   primaryUser: Profile | null;
+  accountAuth: AccountAuth | null;
   intakeContact: IntakeContact | null;
   onContactUpdated: () => void;
 }) {
@@ -279,8 +310,8 @@ function PrimaryAccountSection({
     },
   });
 
-  const authEmail = authQ.data?.email ?? primaryUser?.email ?? intakeContact?.email ?? "";
-  const authPhone = authQ.data?.phone ?? intakeContact?.phone ?? "";
+  const authEmail = authQ.data?.email ?? accountAuth?.email ?? primaryUser?.email ?? intakeContact?.email ?? "";
+  const authPhone = authQ.data?.phone ?? accountAuth?.phone ?? intakeContact?.phone ?? "";
 
   const [email, setEmail] = useState(authEmail);
   const [phone, setPhone] = useState(authPhone);
@@ -292,15 +323,6 @@ function PrimaryAccountSection({
     setEmail(authEmail);
     setPhone(authPhone);
   }, [authEmail, authPhone]);
-
-  if (!primaryUser && !intakeContact) {
-    return (
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="mb-4 text-sm font-semibold">Primary account on file</h2>
-        <p className="text-sm text-muted-foreground">No user or intake contact is linked to this workspace yet.</p>
-      </section>
-    );
-  }
 
   const emailDirty = email.trim().toLowerCase() !== authEmail.trim().toLowerCase();
   const phoneDirty = phone.trim() !== authPhone.trim();
@@ -358,7 +380,24 @@ function PrimaryAccountSection({
           .update({ answers: { ...intakeContact.answers, __contact_email: next } })
           .eq("id", intakeContact.id);
         if (error) throw error;
-        toast.success("Email on file updated.");
+        const accessToken = await getToken();
+        await createOrUpdateClientAccountForTenant({
+          data: {
+            tenantId: tenant.id,
+            email: next,
+            phone,
+            name: intakeContact.businessName ?? tenant.name,
+            accessToken,
+          },
+        });
+        toast.success("Client account linked and password reset sent.");
+        onContactUpdated();
+      } else {
+        const accessToken = await getToken();
+        await createOrUpdateClientAccountForTenant({
+          data: { tenantId: tenant.id, email: next, phone, name: tenant.name, accessToken },
+        });
+        toast.success("Client account created and password reset sent.");
         onContactUpdated();
       }
     } catch (err) {
@@ -389,6 +428,13 @@ function PrimaryAccountSection({
           })
           .eq("id", intakeContact.id);
         if (error) throw error;
+        toast.success(next ? "Phone number updated." : "Phone number removed.");
+        onContactUpdated();
+      } else if (authEmail) {
+        const accessToken = await getToken();
+        await createOrUpdateClientAccountForTenant({
+          data: { tenantId: tenant.id, email: authEmail, phone: next, name: tenant.name, accessToken },
+        });
         toast.success(next ? "Phone number updated." : "Phone number removed.");
         onContactUpdated();
       }
@@ -444,7 +490,7 @@ function PrimaryAccountSection({
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Saving the email updates the account login and sends a password-reset link to the new address.
+          Saving the email creates or updates the client login and sends a password-reset link.
         </p>
       </div>
 

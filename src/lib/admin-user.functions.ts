@@ -126,6 +126,207 @@ const UserIdSchema = z.object({
   accessToken: z.string().min(10).max(4096),
 });
 
+const TenantAccountSchema = z.object({
+  tenantId: z.string().uuid(),
+  accessToken: z.string().min(10).max(4096),
+});
+
+const UpsertTenantAccountSchema = z.object({
+  tenantId: z.string().uuid(),
+  email: z.string().email().max(320),
+  phone: z.string().trim().max(32).optional().default(""),
+  name: z.string().trim().max(255).optional().default(""),
+  accessToken: z.string().min(10).max(4096),
+});
+
+async function findAuthUserByEmail(baseUrl: string, serviceKey: string, email: string): Promise<{ id: string; email: string | null } | null> {
+  const res = await fetch(`${baseUrl}/auth/v1/admin/users?page=1&per_page=1000`, {
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as { users?: Array<{ id?: string; email?: string | null }> };
+  const user = json.users?.find((item) => item.id && item.email?.toLowerCase() === email.toLowerCase());
+  return user?.id ? { id: user.id, email: user.email ?? null } : null;
+}
+
+export const getClientAccountForTenant = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => TenantAccountSchema.parse(input))
+  .handler(async ({ data }) => {
+    await requireSuperAdmin(data.accessToken);
+    const { baseUrl, serviceKey } = vektissEnv();
+    if (!serviceKey) {
+      throw new Error(
+        "Reading client account details requires VEKTISS_SUPABASE_SERVICE_ROLE_KEY in project secrets.",
+      );
+    }
+
+    const profileRes = await fetch(
+      `${baseUrl}/rest/v1/profiles?tenant_id=eq.${data.tenantId}&select=id,tenant_id,role,full_name,name,email&order=role.asc&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    if (!profileRes.ok) {
+      const text = await profileRes.text().catch(() => "");
+      throw new Error(`Profile read failed (${profileRes.status}): ${text.slice(0, 300)}`);
+    }
+    const profiles = (await profileRes.json()) as Array<{
+      id: string;
+      tenant_id: string | null;
+      role: string | null;
+      full_name: string | null;
+      name: string | null;
+      email: string | null;
+    }>;
+    const profile = profiles[0] ?? null;
+    if (!profile?.id) return { profile: null, auth: null };
+
+    const authRes = await fetch(`${baseUrl}/auth/v1/admin/users/${profile.id}`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    if (!authRes.ok) {
+      const text = await authRes.text().catch(() => "");
+      throw new Error(`Auth read failed (${authRes.status}): ${text.slice(0, 300)}`);
+    }
+    const u = (await authRes.json()) as {
+      email?: string | null;
+      phone?: string | null;
+      email_confirmed_at?: string | null;
+      phone_confirmed_at?: string | null;
+      last_sign_in_at?: string | null;
+    };
+    return {
+      profile: {
+        id: profile.id,
+        tenant_id: profile.tenant_id,
+        role: profile.role ?? "client_admin",
+        full_name: profile.full_name,
+        name: profile.name,
+        email: profile.email,
+      },
+      auth: {
+        email: u.email ?? profile.email ?? null,
+        phone: u.phone ?? null,
+        emailConfirmedAt: u.email_confirmed_at ?? null,
+        phoneConfirmedAt: u.phone_confirmed_at ?? null,
+        lastSignInAt: u.last_sign_in_at ?? null,
+      },
+    };
+  });
+
+export const createOrUpdateClientAccountForTenant = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => UpsertTenantAccountSchema.parse(input))
+  .handler(async ({ data }) => {
+    await requireSuperAdmin(data.accessToken);
+    const { baseUrl, anonKey, serviceKey } = vektissEnv();
+    if (!serviceKey) {
+      throw new Error(
+        "Creating or updating a client account requires VEKTISS_SUPABASE_SERVICE_ROLE_KEY in project secrets.",
+      );
+    }
+
+    const cleanedPhone = data.phone.replace(/[^\d+]/g, "");
+    if (cleanedPhone && !/^\+?\d{7,15}$/.test(cleanedPhone)) {
+      throw new Error("Phone must be 7–15 digits, optionally starting with '+'.");
+    }
+
+    const profileRes = await fetch(
+      `${baseUrl}/rest/v1/profiles?tenant_id=eq.${data.tenantId}&select=id&order=role.asc&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const profiles = profileRes.ok ? ((await profileRes.json()) as Array<{ id: string }>) : [];
+    let userId: string | null = profiles[0]?.id || null;
+
+    if (!userId) {
+      const existing = await findAuthUserByEmail(baseUrl, serviceKey, data.email);
+      userId = existing?.id ?? null;
+    }
+
+    if (!userId) {
+      const createBody: Record<string, unknown> = {
+        email: data.email,
+        email_confirm: true,
+        user_metadata: data.name ? { name: data.name } : {},
+      };
+      if (cleanedPhone) {
+        createBody.phone = cleanedPhone;
+        createBody.phone_confirm = true;
+      }
+      const createRes = await fetch(`${baseUrl}/auth/v1/admin/users`, {
+        method: "POST",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(createBody),
+      });
+      if (!createRes.ok) {
+        const existing = await findAuthUserByEmail(baseUrl, serviceKey, data.email);
+        if (!existing?.id) {
+          const text = await createRes.text().catch(() => "");
+          throw new Error(`Account create failed (${createRes.status}): ${text.slice(0, 300)}`);
+        }
+        userId = existing.id;
+      } else {
+        const created = (await createRes.json()) as { id?: string };
+        userId = created.id ?? null;
+      }
+    }
+
+    if (!userId) throw new Error("Could not create or locate the client account.");
+
+    const updateBody: Record<string, unknown> = { email: data.email, email_confirm: true };
+    updateBody.phone = cleanedPhone || "";
+    if (cleanedPhone) updateBody.phone_confirm = true;
+    const authRes = await fetch(`${baseUrl}/auth/v1/admin/users/${userId}`, {
+      method: "PUT",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updateBody),
+    });
+    if (!authRes.ok) {
+      const text = await authRes.text().catch(() => "");
+      throw new Error(`Account update failed (${authRes.status}): ${text.slice(0, 300)}`);
+    }
+
+    const profilePayload = {
+      id: userId,
+      tenant_id: data.tenantId,
+      role: "client_admin",
+      email: data.email,
+      name: data.name || null,
+      full_name: data.name || null,
+    };
+    const upsertProfileRes = await fetch(`${baseUrl}/rest/v1/profiles?on_conflict=id`, {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify(profilePayload),
+    });
+    if (!upsertProfileRes.ok) {
+      const text = await upsertProfileRes.text().catch(() => "");
+      throw new Error(`Profile update failed (${upsertProfileRes.status}): ${text.slice(0, 300)}`);
+    }
+
+    await fetch(`${baseUrl}/auth/v1/recover`, {
+      method: "POST",
+      headers: { apikey: anonKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: data.email }),
+    }).catch(() => {});
+
+    return {
+      ok: true as const,
+      profile: profilePayload,
+      auth: { email: data.email, phone: cleanedPhone || null },
+    };
+  });
+
 export const getClientAuthInfo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => UserIdSchema.parse(input))
   .handler(async ({ data }) => {
