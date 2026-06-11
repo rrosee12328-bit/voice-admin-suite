@@ -38,6 +38,14 @@ type IntakeContact = {
   answers: Record<string, unknown>;
 };
 
+type AccountAuth = {
+  email: string | null;
+  phone: string | null;
+  emailConfirmedAt: string | null;
+  phoneConfirmedAt: string | null;
+  lastSignInAt: string | null;
+};
+
 function normalizeClientName(value: string | null | undefined) {
   return (value ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
 }
@@ -202,11 +210,13 @@ function AdminClientView() {
 function ClientSettingsView({
   tenant,
   primaryUser,
+  accountAuth,
   intakeContact,
   onContactUpdated,
 }: {
   tenant: Tenant;
   primaryUser: Profile | null;
+  accountAuth: AccountAuth | null;
   intakeContact: IntakeContact | null;
   onContactUpdated: () => void;
 }) {
@@ -264,6 +274,7 @@ function ClientSettingsView({
 
       <PrimaryAccountSection
         primaryUser={primaryUser}
+        accountAuth={accountAuth}
         intakeContact={intakeContact}
         onContactUpdated={onContactUpdated}
       />
@@ -273,10 +284,12 @@ function ClientSettingsView({
 
 function PrimaryAccountSection({
   primaryUser,
+  accountAuth,
   intakeContact,
   onContactUpdated,
 }: {
   primaryUser: Profile | null;
+  accountAuth: AccountAuth | null;
   intakeContact: IntakeContact | null;
   onContactUpdated: () => void;
 }) {
@@ -293,8 +306,8 @@ function PrimaryAccountSection({
     },
   });
 
-  const authEmail = authQ.data?.email ?? primaryUser?.email ?? intakeContact?.email ?? "";
-  const authPhone = authQ.data?.phone ?? intakeContact?.phone ?? "";
+  const authEmail = authQ.data?.email ?? accountAuth?.email ?? primaryUser?.email ?? intakeContact?.email ?? "";
+  const authPhone = authQ.data?.phone ?? accountAuth?.phone ?? intakeContact?.phone ?? "";
 
   const [email, setEmail] = useState(authEmail);
   const [phone, setPhone] = useState(authPhone);
