@@ -233,7 +233,7 @@ export const createOrUpdateClientAccountForTenant = createServerFn({ method: "PO
       { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
     );
     const profiles = profileRes.ok ? ((await profileRes.json()) as Array<{ id: string }>) : [];
-    let userId = profiles[0]?.id ?? null;
+    let userId: string | null = profiles[0]?.id || null;
 
     if (!userId) {
       const existing = await findAuthUserByEmail(baseUrl, serviceKey, data.email);
