@@ -64,17 +64,67 @@ const PLANS: PlanDef[] = [
   },
 ];
 
+type FieldErrors = {
+  firstName?: string;
+  businessName?: string;
+  email?: string;
+  phone?: string;
+};
+
+function validateEmail(value: string): string | undefined {
+  if (!value.trim()) return "Email is required";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter a valid email address";
+}
+
+function validatePhone(value: string): string | undefined {
+  const digitsOnly = value.replace(/\D/g, "");
+  if (!value.trim()) return "Phone number is required";
+  if (digitsOnly.length < 10) return "Enter a valid phone number (at least 10 digits)";
+}
+
+function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length === 0) return "";
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)} ext ${digits.slice(10)}`;
+}
+
 function GetStartedPage() {
   const [selected, setSelected] = useState<PlanId>("phone_email");
   const [firstName, setFirstName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const canSubmit = firstName.trim() && businessName.trim() && emailValid && phone.trim();
+  const validateField = useCallback(
+    (name: keyof FieldErrors, value: string) => {
+      let error: string | undefined;
+      if (name === "firstName") {
+        if (!value.trim()) error = "First name is required";
+      } else if (name === "businessName") {
+        if (!value.trim()) error = "Business name is required";
+      } else if (name === "email") {
+        error = validateEmail(value);
+      } else if (name === "phone") {
+        error = validatePhone(value);
+      }
+      setErrors((prev) => ({ ...prev, [name]: error }));
+      return !error;
+    },
+    [],
+  );
+
+  const canSubmit =
+    firstName.trim() &&
+    businessName.trim() &&
+    !validateEmail(email) &&
+    !validatePhone(phone);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
