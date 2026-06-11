@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
@@ -64,21 +64,110 @@ const PLANS: PlanDef[] = [
   },
 ];
 
+type FieldErrors = {
+  firstName?: string;
+  businessName?: string;
+  email?: string;
+  phone?: string;
+};
+
+function validateEmail(value: string): string | undefined {
+  if (!value.trim()) return "Email is required";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter a valid email address";
+}
+
+function validatePhone(value: string): string | undefined {
+  const digitsOnly = value.replace(/\D/g, "");
+  if (!value.trim()) return "Phone number is required";
+  if (digitsOnly.length < 10) return "Enter a valid phone number (at least 10 digits)";
+}
+
+function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length === 0) return "";
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)} ext ${digits.slice(10)}`;
+}
+
 function GetStartedPage() {
   const [selected, setSelected] = useState<PlanId>("phone_email");
   const [firstName, setFirstName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const canSubmit = firstName.trim() && businessName.trim() && emailValid && phone.trim();
+  const validateField = useCallback(
+    (name: keyof FieldErrors, value: string) => {
+      let error: string | undefined;
+      if (name === "firstName") {
+        if (!value.trim()) error = "First name is required";
+      } else if (name === "businessName") {
+        if (!value.trim()) error = "Business name is required";
+      } else if (name === "email") {
+        error = validateEmail(value);
+      } else if (name === "phone") {
+        error = validatePhone(value);
+      }
+      setErrors((prev) => ({ ...prev, [name]: error }));
+      return !error;
+    },
+    [],
+  );
+
+  const canSubmit =
+    firstName.trim() &&
+    businessName.trim() &&
+    !validateEmail(email) &&
+    !validatePhone(phone);
+
+  const validateAll = useCallback(() => {
+    const fields: (keyof FieldErrors)[] = ["firstName", "businessName", "email", "phone"];
+    let ok = true;
+    const nextErrors: FieldErrors = {};
+    for (const name of fields) {
+      const value =
+        name === "firstName"
+          ? firstName
+          : name === "businessName"
+            ? businessName
+            : name === "email"
+              ? email
+              : phone;
+      let error: string | undefined;
+      if (name === "firstName" && !value.trim()) error = "First name is required";
+      if (name === "businessName" && !value.trim()) error = "Business name is required";
+      if (name === "email") error = validateEmail(value);
+      if (name === "phone") error = validatePhone(value);
+      if (error) ok = false;
+      nextErrors[name] = error;
+    }
+    setErrors(nextErrors);
+    setTouched({ firstName: true, businessName: true, email: true, phone: true });
+    return ok;
+  }, [firstName, businessName, email, phone]);
+
+  const handleBlur = (name: keyof FieldErrors) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const value =
+      name === "firstName"
+        ? firstName
+        : name === "businessName"
+          ? businessName
+          : name === "email"
+            ? email
+            : phone;
+    validateField(name, value);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit || submitting) return;
+    if (!validateAll() || submitting) return;
 
     if (selected === "custom") {
       const url = `https://calendly.com/vektiss-info/30-minute-vektiss-discovery?name=${encodeURIComponent(
@@ -224,20 +313,42 @@ function GetStartedPage() {
                   <Input
                     id="firstName"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => {
+                      setFirstName(e.target.value);
+                      if (touched.firstName) validateField("firstName", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("firstName")}
                     autoComplete="given-name"
-                    required
+                    aria-invalid={!!errors.firstName}
+                    aria-describedby={errors.firstName ? "firstName-error" : undefined}
+                    className={errors.firstName && touched.firstName ? "border-destructive" : ""}
                   />
+                  {errors.firstName && touched.firstName && (
+                    <p id="firstName-error" className="text-xs text-destructive">
+                      {errors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="businessName">Business name *</Label>
                   <Input
                     id="businessName"
                     value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
+                    onChange={(e) => {
+                      setBusinessName(e.target.value);
+                      if (touched.businessName) validateField("businessName", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("businessName")}
                     autoComplete="organization"
-                    required
+                    aria-invalid={!!errors.businessName}
+                    aria-describedby={errors.businessName ? "businessName-error" : undefined}
+                    className={errors.businessName && touched.businessName ? "border-destructive" : ""}
                   />
+                  {errors.businessName && touched.businessName && (
+                    <p id="businessName-error" className="text-xs text-destructive">
+                      {errors.businessName}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email *</Label>
@@ -245,10 +356,21 @@ function GetStartedPage() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (touched.email) validateField("email", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("email")}
                     autoComplete="email"
-                    required
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                    className={errors.email && touched.email ? "border-destructive" : ""}
                   />
+                  {errors.email && touched.email && (
+                    <p id="email-error" className="text-xs text-destructive">
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">Phone *</Label>
@@ -256,10 +378,23 @@ function GetStartedPage() {
                     id="phone"
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      const formatted = formatPhoneInput(e.target.value);
+                      setPhone(formatted);
+                      if (touched.phone) validateField("phone", formatted);
+                    }}
+                    onBlur={() => handleBlur("phone")}
                     autoComplete="tel"
-                    required
+                    placeholder="(555) 123-4567"
+                    aria-invalid={!!errors.phone}
+                    aria-describedby={errors.phone ? "phone-error" : undefined}
+                    className={errors.phone && touched.phone ? "border-destructive" : ""}
                   />
+                  {errors.phone && touched.phone && (
+                    <p id="phone-error" className="text-xs text-destructive">
+                      {errors.phone}
+                    </p>
+                  )}
                 </div>
               </div>
               <Button
