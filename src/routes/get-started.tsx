@@ -66,6 +66,7 @@ const PLANS: PlanDef[] = [
 
 type FieldErrors = {
   firstName?: string;
+  lastName?: string;
   businessName?: string;
   email?: string;
   phone?: string;
@@ -94,6 +95,7 @@ function formatPhoneInput(value: string): string {
 function GetStartedPage() {
   const [selected, setSelected] = useState<PlanId>("phone_email");
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -102,83 +104,67 @@ function GetStartedPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const validateField = useCallback(
-    (name: keyof FieldErrors, value: string) => {
-      let error: string | undefined;
-      if (name === "firstName") {
-        if (!value.trim()) error = "First name is required";
-      } else if (name === "businessName") {
-        if (!value.trim()) error = "Business name is required";
-      } else if (name === "email") {
-        error = validateEmail(value);
-      } else if (name === "phone") {
-        error = validatePhone(value);
-      }
-      setErrors((prev) => ({ ...prev, [name]: error }));
-      return !error;
-    },
-    [],
+  const getValue = useCallback(
+    (name: keyof FieldErrors) =>
+      name === "firstName"
+        ? firstName
+        : name === "lastName"
+          ? lastName
+          : name === "businessName"
+            ? businessName
+            : name === "email"
+              ? email
+              : phone,
+    [firstName, lastName, businessName, email, phone],
   );
+
+  const computeError = (name: keyof FieldErrors, value: string): string | undefined => {
+    if (name === "firstName") return !value.trim() ? "First name is required" : undefined;
+    if (name === "lastName") return !value.trim() ? "Last name is required" : undefined;
+    if (name === "businessName") return !value.trim() ? "Business name is required" : undefined;
+    if (name === "email") return validateEmail(value);
+    if (name === "phone") return validatePhone(value);
+  };
+
+  const validateField = useCallback((name: keyof FieldErrors, value: string) => {
+    const error = computeError(name, value);
+    setErrors((prev) => ({ ...prev, [name]: error }));
+    return !error;
+  }, []);
 
   const canSubmit =
     firstName.trim() &&
+    lastName.trim() &&
     businessName.trim() &&
     !validateEmail(email) &&
     !validatePhone(phone);
 
   const validateAll = useCallback(() => {
-    const fields: (keyof FieldErrors)[] = ["firstName", "businessName", "email", "phone"];
+    const fields: (keyof FieldErrors)[] = ["firstName", "lastName", "businessName", "email", "phone"];
     let ok = true;
     const nextErrors: FieldErrors = {};
     for (const name of fields) {
-      const value =
-        name === "firstName"
-          ? firstName
-          : name === "businessName"
-            ? businessName
-            : name === "email"
-              ? email
-              : phone;
-      let error: string | undefined;
-      if (name === "firstName" && !value.trim()) error = "First name is required";
-      if (name === "businessName" && !value.trim()) error = "Business name is required";
-      if (name === "email") error = validateEmail(value);
-      if (name === "phone") error = validatePhone(value);
+      const error = computeError(name, getValue(name));
       if (error) ok = false;
       nextErrors[name] = error;
     }
     setErrors(nextErrors);
-    setTouched({ firstName: true, businessName: true, email: true, phone: true });
+    setTouched({ firstName: true, lastName: true, businessName: true, email: true, phone: true });
     return ok;
-  }, [firstName, businessName, email, phone]);
+  }, [getValue]);
 
   const handleBlur = (name: keyof FieldErrors) => {
     setTouched((prev) => ({ ...prev, [name]: true }));
-    const value =
-      name === "firstName"
-        ? firstName
-        : name === "businessName"
-          ? businessName
-          : name === "email"
-            ? email
-            : phone;
-    validateField(name, value);
+    validateField(name, getValue(name));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateAll() || submitting) return;
 
-    if (selected === "custom") {
-      const url = `https://calendly.com/vektiss-info/30-minute-vektiss-discovery?name=${encodeURIComponent(
-        firstName,
-      )}&email=${encodeURIComponent(email)}`;
-      window.location.href = url;
-      return;
-    }
-
     setSubmitting(true);
     try {
+      // Always create a draft intake record (including for Custom plan).
       const { data, error } = await supabase
         .from("intake_forms")
         .insert({
@@ -188,6 +174,7 @@ function GetStartedPage() {
             __plan: selected,
             __contact_email: email,
             __first_name: firstName,
+            __last_name: lastName,
             __source: "self_serve",
           },
         })
@@ -195,8 +182,17 @@ function GetStartedPage() {
         .single();
       if (error) throw error;
       const token = data!.token as string;
-      const link = `${window.location.origin}/intake/${token}`;
 
+      if (selected === "custom") {
+        const fullName = `${firstName} ${lastName}`.trim();
+        const url = `https://calendly.com/vektiss-info/30-minute-vektiss-discovery?name=${encodeURIComponent(
+          fullName,
+        )}&email=${encodeURIComponent(email)}`;
+        window.location.href = url;
+        return;
+      }
+
+      const link = `${window.location.origin}/intake/${token}`;
       await sendSelfServeInvite({
         data: {
           recipientEmail: email,
@@ -215,6 +211,7 @@ function GetStartedPage() {
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="bg-grid min-h-screen text-foreground">
@@ -326,6 +323,27 @@ function GetStartedPage() {
                   {errors.firstName && touched.firstName && (
                     <p id="firstName-error" className="text-xs text-destructive">
                       {errors.firstName}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="lastName">Last name *</Label>
+                  <Input
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => {
+                      setLastName(e.target.value);
+                      if (touched.lastName) validateField("lastName", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("lastName")}
+                    autoComplete="family-name"
+                    aria-invalid={!!errors.lastName}
+                    aria-describedby={errors.lastName ? "lastName-error" : undefined}
+                    className={errors.lastName && touched.lastName ? "border-destructive" : ""}
+                  />
+                  {errors.lastName && touched.lastName && (
+                    <p id="lastName-error" className="text-xs text-destructive">
+                      {errors.lastName}
                     </p>
                   )}
                 </div>
