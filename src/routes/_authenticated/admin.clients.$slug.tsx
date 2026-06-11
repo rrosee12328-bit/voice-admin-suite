@@ -185,7 +185,17 @@ function AdminClientView() {
   );
 }
 
-function ClientSettingsView({ tenant, primaryUser }: { tenant: Tenant; primaryUser: Profile | null }) {
+function ClientSettingsView({
+  tenant,
+  primaryUser,
+  intakeContact,
+  onContactUpdated,
+}: {
+  tenant: Tenant;
+  primaryUser: Profile | null;
+  intakeContact: IntakeContact | null;
+  onContactUpdated: () => void;
+}) {
   const plan = tenant.plan ?? "phone_starter";
 
   return (
@@ -238,12 +248,24 @@ function ClientSettingsView({ tenant, primaryUser }: { tenant: Tenant; primaryUs
         </div>
       </section>
 
-      <PrimaryAccountSection primaryUser={primaryUser} />
+      <PrimaryAccountSection
+        primaryUser={primaryUser}
+        intakeContact={intakeContact}
+        onContactUpdated={onContactUpdated}
+      />
     </div>
   );
 }
 
-function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null }) {
+function PrimaryAccountSection({
+  primaryUser,
+  intakeContact,
+  onContactUpdated,
+}: {
+  primaryUser: Profile | null;
+  intakeContact: IntakeContact | null;
+  onContactUpdated: () => void;
+}) {
   const userId = primaryUser?.id ?? null;
 
   const authQ = useQuery({
