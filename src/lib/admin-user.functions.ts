@@ -120,3 +120,80 @@ export const updateClientEmail = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
+
+const UserIdSchema = z.object({
+  userId: z.string().uuid(),
+  accessToken: z.string().min(10).max(4096),
+});
+
+export const getClientAuthInfo = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => UserIdSchema.parse(input))
+  .handler(async ({ data }) => {
+    await requireSuperAdmin(data.accessToken);
+    const { baseUrl, serviceKey } = vektissEnv();
+    if (!serviceKey) {
+      throw new Error(
+        "Reading auth details requires VEKTISS_SUPABASE_SERVICE_ROLE_KEY in project secrets.",
+      );
+    }
+    const res = await fetch(`${baseUrl}/auth/v1/admin/users/${data.userId}`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Auth read failed (${res.status}): ${text.slice(0, 300)}`);
+    }
+    const u = (await res.json()) as {
+      email?: string | null;
+      phone?: string | null;
+      email_confirmed_at?: string | null;
+      phone_confirmed_at?: string | null;
+      last_sign_in_at?: string | null;
+    };
+    return {
+      email: u.email ?? null,
+      phone: u.phone ?? null,
+      emailConfirmedAt: u.email_confirmed_at ?? null,
+      phoneConfirmedAt: u.phone_confirmed_at ?? null,
+      lastSignInAt: u.last_sign_in_at ?? null,
+    };
+  });
+
+const UpdatePhoneSchema = z.object({
+  userId: z.string().uuid(),
+  newPhone: z.string().trim().max(32),
+  accessToken: z.string().min(10).max(4096),
+});
+
+export const updateClientPhone = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => UpdatePhoneSchema.parse(input))
+  .handler(async ({ data }) => {
+    await requireSuperAdmin(data.accessToken);
+    const { baseUrl, serviceKey } = vektissEnv();
+    if (!serviceKey) {
+      throw new Error(
+        "Updating a client's phone requires VEKTISS_SUPABASE_SERVICE_ROLE_KEY in project secrets.",
+      );
+    }
+    const cleaned = data.newPhone.replace(/[^\d+]/g, "");
+    if (cleaned && !/^\+?\d{7,15}$/.test(cleaned)) {
+      throw new Error("Phone must be 7–15 digits, optionally starting with '+'.");
+    }
+    const body: Record<string, unknown> = cleaned
+      ? { phone: cleaned, phone_confirm: true }
+      : { phone: "" };
+    const res = await fetch(`${baseUrl}/auth/v1/admin/users/${data.userId}`, {
+      method: "PUT",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Phone update failed (${res.status}): ${text.slice(0, 300)}`);
+    }
+    return { ok: true as const, phone: cleaned || null };
+  });

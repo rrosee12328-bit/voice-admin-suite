@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ArrowLeft, Eye, ExternalLink, Loader2, Mail, Receipt } from "lucide-react";
 import { toast } from "sonner";
@@ -14,7 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/empty-state";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { sendClientPasswordReset, updateClientEmail } from "@/lib/admin-user.functions";
+import {
+  sendClientPasswordReset,
+  updateClientEmail,
+  updateClientPhone,
+  getClientAuthInfo,
+} from "@/lib/admin-user.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$slug")({
   component: AdminClientView,
@@ -181,9 +186,34 @@ function ClientSettingsView({ tenant, primaryUser }: { tenant: Tenant; primaryUs
 }
 
 function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null }) {
-  const [email, setEmail] = useState(primaryUser?.email ?? "");
+  const userId = primaryUser?.id ?? null;
+
+  const authQ = useQuery({
+    queryKey: ["client-auth-info", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Your session has expired. Sign in again.");
+      return await getClientAuthInfo({ data: { userId: userId!, accessToken: token } });
+    },
+  });
+
+  const authEmail = authQ.data?.email ?? primaryUser?.email ?? "";
+  const authPhone = authQ.data?.phone ?? "";
+
+  const [email, setEmail] = useState(authEmail);
+  const [phone, setPhone] = useState(authPhone);
   const [resetLoading, setResetLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveEmailLoading, setSaveEmailLoading] = useState(false);
+  const [savePhoneLoading, setSavePhoneLoading] = useState(false);
+
+  useEffect(() => {
+    if (authQ.data) {
+      setEmail(authQ.data.email ?? "");
+      setPhone(authQ.data.phone ?? "");
+    }
+  }, [authQ.data]);
 
   if (!primaryUser) {
     return (
@@ -194,7 +224,8 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
     );
   }
 
-  const dirty = email.trim().toLowerCase() !== (primaryUser.email ?? "").trim().toLowerCase();
+  const emailDirty = email.trim().toLowerCase() !== authEmail.trim().toLowerCase();
+  const phoneDirty = phone.trim() !== authPhone.trim();
 
   async function getToken() {
     const { data } = await supabase.auth.getSession();
@@ -208,7 +239,7 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
   }
 
   const handleSendReset = async () => {
-    const target = (primaryUser?.email ?? "").trim();
+    const target = (authEmail || "").trim();
     if (!target) {
       toast.error("No email on file for this user.");
       return;
@@ -233,18 +264,37 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
 
   const handleSaveEmail = async () => {
     const next = email.trim();
-    if (!next || next === primaryUser.email) return;
-    setSaveLoading(true);
+    if (!next || next === authEmail) return;
+    setSaveEmailLoading(true);
     try {
       const accessToken = await getToken();
       await updateClientEmail({
         data: { userId: primaryUser.id, newEmail: next, accessToken },
       });
       toast.success("Email updated and password reset sent.");
+      await authQ.refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update email.");
     } finally {
-      setSaveLoading(false);
+      setSaveEmailLoading(false);
+    }
+  };
+
+  const handleSavePhone = async () => {
+    const next = phone.trim();
+    if (next === authPhone.trim()) return;
+    setSavePhoneLoading(true);
+    try {
+      const accessToken = await getToken();
+      const result = await updateClientPhone({
+        data: { userId: primaryUser.id, newPhone: next, accessToken },
+      });
+      toast.success(result.phone ? "Phone number updated." : "Phone number removed.");
+      await authQ.refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update phone.");
+    } finally {
+      setSavePhoneLoading(false);
     }
   };
 
@@ -268,8 +318,16 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
         </div>
       </dl>
 
+      {authQ.isError && (
+        <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {authQ.error instanceof Error ? authQ.error.message : "Failed to load auth details."}
+        </div>
+      )}
+
       <div className="mt-5 space-y-2">
-        <Label htmlFor="client-email" className="text-xs text-muted-foreground">Email</Label>
+        <Label htmlFor="client-email" className="text-xs text-muted-foreground">
+          Email {authQ.isLoading && <span className="ml-1 opacity-60">(loading…)</span>}
+        </Label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             id="client-email"
@@ -279,23 +337,41 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
             placeholder="client@example.com"
             className="flex-1"
           />
-          <Button
-            variant="outline"
-            onClick={handleSaveEmail}
-            disabled={!dirty || saveLoading}
-          >
-            {saveLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button variant="outline" onClick={handleSaveEmail} disabled={!emailDirty || saveEmailLoading}>
+            {saveEmailLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save email
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
           Saving the email updates the account login and sends a password-reset link to the new address.
-          Requires <code className="font-mono text-[11px]">VEKTISS_SUPABASE_SERVICE_ROLE_KEY</code> in secrets.
+        </p>
+      </div>
+
+      <div className="mt-5 space-y-2">
+        <Label htmlFor="client-phone" className="text-xs text-muted-foreground">
+          Phone {authQ.isLoading && <span className="ml-1 opacity-60">(loading…)</span>}
+        </Label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            id="client-phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+15551234567"
+            className="flex-1"
+          />
+          <Button variant="outline" onClick={handleSavePhone} disabled={!phoneDirty || savePhoneLoading}>
+            {savePhoneLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save phone
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          E.164 format recommended (e.g. +15551234567). Leave empty to remove.
         </p>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border pt-4">
-        <Button onClick={handleSendReset} disabled={resetLoading || !primaryUser.email}>
+        <Button onClick={handleSendReset} disabled={resetLoading || !authEmail}>
           {resetLoading ? (
             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
           ) : (
@@ -303,7 +379,7 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
           )}
         </Button>
         <span className="text-xs text-muted-foreground">
-          Sends a reset link to <span className="font-medium text-foreground">{primaryUser.email || "—"}</span>.
+          Sends a reset link to <span className="font-medium text-foreground">{authEmail || "—"}</span>.
         </span>
       </div>
     </section>
