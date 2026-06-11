@@ -136,7 +136,7 @@ function PricingPage() {
                 )}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary-foreground shadow-sm">
+                  <div className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-primary/30 bg-accent px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary shadow-sm">
                     <Plus className="h-3 w-3" />
                     Most Popular
                   </div>
