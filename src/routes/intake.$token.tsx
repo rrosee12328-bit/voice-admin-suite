@@ -471,7 +471,9 @@ function ReviewAndPay({
           client_name: clientFirstName,
           client_email: contactEmail ?? "",
           client_phone: contactPhone,
-          plan_price: String(PLAN_PRICE[plan]),
+          plan_price: String(displayPrice),
+          plan_label: displayLabel,
+          included_minutes: isCustom ? customMinutes ?? undefined : undefined,
         }),
       });
       if (!res.ok) throw new Error(`Checkout failed (${res.status})`);
