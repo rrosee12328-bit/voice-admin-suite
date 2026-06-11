@@ -126,9 +126,48 @@ function GetStartedPage() {
     !validateEmail(email) &&
     !validatePhone(phone);
 
+  const validateAll = useCallback(() => {
+    const fields: (keyof FieldErrors)[] = ["firstName", "businessName", "email", "phone"];
+    let ok = true;
+    const nextErrors: FieldErrors = {};
+    for (const name of fields) {
+      const value =
+        name === "firstName"
+          ? firstName
+          : name === "businessName"
+            ? businessName
+            : name === "email"
+              ? email
+              : phone;
+      let error: string | undefined;
+      if (name === "firstName" && !value.trim()) error = "First name is required";
+      if (name === "businessName" && !value.trim()) error = "Business name is required";
+      if (name === "email") error = validateEmail(value);
+      if (name === "phone") error = validatePhone(value);
+      if (error) ok = false;
+      nextErrors[name] = error;
+    }
+    setErrors(nextErrors);
+    setTouched({ firstName: true, businessName: true, email: true, phone: true });
+    return ok;
+  }, [firstName, businessName, email, phone]);
+
+  const handleBlur = (name: keyof FieldErrors) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const value =
+      name === "firstName"
+        ? firstName
+        : name === "businessName"
+          ? businessName
+          : name === "email"
+            ? email
+            : phone;
+    validateField(name, value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit || submitting) return;
+    if (!validateAll() || submitting) return;
 
     if (selected === "custom") {
       const url = `https://calendly.com/vektiss-info/30-minute-vektiss-discovery?name=${encodeURIComponent(
