@@ -208,9 +208,12 @@ function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null })
   const [saveEmailLoading, setSaveEmailLoading] = useState(false);
   const [savePhoneLoading, setSavePhoneLoading] = useState(false);
 
-  // sync local state when fetch resolves
-  if (authQ.data && email === "" && authEmail) setEmail(authEmail);
-  if (authQ.data && phone === "" && authPhone) setPhone(authPhone);
+  useEffect(() => {
+    if (authQ.data) {
+      setEmail(authQ.data.email ?? "");
+      setPhone(authQ.data.phone ?? "");
+    }
+  }, [authQ.data]);
 
   if (!primaryUser) {
     return (
