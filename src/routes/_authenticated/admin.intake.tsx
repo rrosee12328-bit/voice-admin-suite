@@ -22,7 +22,7 @@ import { intakeToMarkdown, intakeToPdf, downloadBlob, type IntakeRow } from "@/l
 import { formatDistanceToNow } from "date-fns";
 import { InviteClientDialog } from "@/components/invite-client-dialog";
 import { EditDraftIntakeDialog } from "@/components/edit-draft-intake-dialog";
-import { SetCustomPlanDialog } from "@/components/set-custom-plan-dialog";
+import { SendIntakeLinkDialog } from "@/components/send-intake-link-dialog";
 import { PLAN_LABEL } from "@/lib/plan-gating";
 import type { Plan } from "@/integrations/supabase/app-types";
 
@@ -208,7 +208,7 @@ function IntakeListPage() {
                       </div>
                     </div>
                     {row.status !== "submitted" && <EditDraftIntakeDialog row={row} />}
-                    <SetCustomPlanDialog row={row} />
+                    <SendIntakeLinkDialog row={row} />
                     <Button size="sm" variant="outline" onClick={() => copyLink(link)}>
                       <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy link
                     </Button>
