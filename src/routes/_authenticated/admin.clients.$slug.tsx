@@ -324,15 +324,6 @@ function PrimaryAccountSection({
     setPhone(authPhone);
   }, [authEmail, authPhone]);
 
-  if (!primaryUser && !intakeContact) {
-    return (
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="mb-4 text-sm font-semibold">Primary account on file</h2>
-        <p className="text-sm text-muted-foreground">No user or intake contact is linked to this workspace yet.</p>
-      </section>
-    );
-  }
-
   const emailDirty = email.trim().toLowerCase() !== authEmail.trim().toLowerCase();
   const phoneDirty = phone.trim() !== authPhone.trim();
 
@@ -499,7 +490,7 @@ function PrimaryAccountSection({
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Saving the email updates the account login and sends a password-reset link to the new address.
+          Saving the email creates or updates the client login and sends a password-reset link.
         </p>
       </div>
 
