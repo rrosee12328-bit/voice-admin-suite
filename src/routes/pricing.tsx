@@ -1,154 +1,187 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Check, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — Vektiss" },
-      { name: "description", content: "Simple, transparent pricing for Vektiss AI phone receptionist plans." },
-      { property: "og:title", content: "Pricing — Vektiss" },
-      { property: "og:description", content: "Simple, transparent pricing for Vektiss AI phone receptionist plans." },
+      { title: "Pricing — Vektiss Voice" },
+      { name: "description", content: "Vektiss Voice plans. Done-for-you setup. 30-day money-back guarantee. No contracts." },
+      { property: "og:title", content: "Pricing — Vektiss Voice" },
+      { property: "og:description", content: "Vektiss Voice plans. Done-for-you setup. 30-day money-back guarantee. No contracts." },
     ],
   }),
   component: PricingPage,
 });
 
-type PlanId = "phone_starter" | "phone_email" | "ai_front_office";
-
-const PLANS: {
-  id: PlanId;
+type PlanDef = {
+  id: string;
   name: string;
   price: string;
-  minutes: string;
+  priceSuffix?: string;
+  tagline?: string;
+  bestFor?: string;
+  allowance?: string;
   features: string[];
+  overage?: string;
   popular?: boolean;
-}[] = [
+  cta: string;
+};
+
+const PLANS: PlanDef[] = [
   {
     id: "phone_starter",
     name: "Phone Starter",
     price: "$45.99",
-    minutes: "100 min/mo included",
-    features: ["AI phone receptionist", "Call logging", "Post-call summaries"],
-  },
-  {
-    id: "phone_email",
-    name: "Phone + Email",
-    price: "$89.99",
-    minutes: "200 min/mo included",
-    features: ["Everything in Starter", "Automated email follow-ups"],
-    popular: true,
+    priceSuffix: "/mo",
+    tagline: "Never miss another call.",
+    bestFor: "Solo operators",
+    allowance: "60 phone minutes / mo",
+    features: [
+      "24/7 AI receptionist",
+      "Smart call routing",
+      "After-hours handling",
+      "Spam blocking",
+      "Call recordings + summaries",
+      "Email alerts after every call",
+      "Done-for-you setup",
+      "30-day money-back",
+    ],
+    overage: "$0.25 / extra minute",
+    cta: "Get Started",
   },
   {
     id: "ai_front_office",
     name: "AI Front Office",
     price: "$199",
-    minutes: "500 min/mo included",
+    priceSuffix: "/mo",
+    tagline: "Your full virtual receptionist.",
+    bestFor: "Growing teams (100+ calls/mo)",
+    allowance: "500 minutes + 500 emails / mo",
     features: [
-      "Everything in Phone + Email",
-      "SMS messaging",
+      "Everything in Phone Starter, plus:",
+      "Intake form delivery",
+      "Email AI assistant",
+      "Analytics dashboard",
+      "Full call transcripts",
+      "Monthly performance report",
+      "Lead scoring (Hot / Warm / Cold)",
+      "Calendar sync (Google + Outlook)",
+      "Bilingual support (EN / ES)",
+      "Auto follow-up emails",
+      "Caller memory",
       "Priority support",
-      "Advanced analytics",
     ],
+    overage: "$0.15 / min · $0.03 / email",
+    popular: true,
+    cta: "Get Started",
+  },
+  {
+    id: "custom",
+    name: "Custom",
+    price: "Let's Talk",
+    tagline: "Built around your workflow.",
+    bestFor: "Multi-location & enterprise",
+    allowance: "Unlimited volume",
+    features: [
+      "Everything in AI Front Office, plus:",
+      "Custom CRM integrations",
+      "Multi-location support",
+      "Outbound AI calling",
+      "Dedicated account manager",
+    ],
+    overage: "Volume-based pricing",
+    cta: "Contact Us",
   },
 ];
 
-const CHECKOUT_URL =
-  "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/create-checkout";
-
 function PricingPage() {
-  const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
-
-  const handleCheckout = async (plan: PlanId) => {
-    setLoadingPlan(plan);
-    try {
-      const res = await fetch(CHECKOUT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const data = (await res.json()) as { url?: string };
-      if (!data.url) throw new Error("No checkout URL returned");
-      window.location.href = data.url;
-    } catch (err) {
-      console.error(err);
-      toast.error("Couldn't start checkout. Please try again.");
-      setLoadingPlan(null);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-6xl px-6 py-20">
-        <div className="mb-14 text-center">
-          <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
-            Pricing
+        <div className="mb-12 text-center">
+          <p className="text-sm font-medium uppercase tracking-wider text-primary">
+            Vektiss Voice Pricing
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+            Vektiss Voice. Starting at $45.99/mo.
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Choose the plan that fits your practice.
+          <p className="mt-4 text-base text-muted-foreground">
+            Done-for-you setup. 30-day money-back guarantee. No contracts.
           </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {PLANS.map((plan) => {
-            const isLoading = loadingPlan === plan.id;
-            return (
-              <div
-                key={plan.id}
-                className={cn(
-                  "relative flex flex-col rounded-2xl border bg-card p-8 shadow-sm",
-                  plan.popular
-                    ? "border-primary/60 shadow-lg ring-1 ring-primary/40"
-                    : "border-border",
-                )}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
-                    Most Popular
-                  </div>
-                )}
-
-                <h2 className="text-xl font-semibold">{plan.name}</h2>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground">/mo</span>
+          {PLANS.map((plan) => (
+            <div
+              key={plan.id}
+              className={cn(
+                "relative flex flex-col rounded-2xl border bg-card p-7 shadow-sm",
+                plan.popular
+                  ? "border-primary/60 shadow-lg ring-1 ring-primary/40"
+                  : "border-border",
+              )}
+            >
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+                  Most Popular
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {plan.minutes}
-                </p>
+              )}
 
-                <ul className="mt-6 flex-1 space-y-3">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
+              <h2 className="text-xl font-semibold">{plan.name}</h2>
+              {plan.tagline && (
+                <p className="mt-1 text-sm text-muted-foreground">{plan.tagline}</p>
+              )}
 
-                <Button
-                  className="mt-8 w-full"
-                  variant={plan.popular ? "default" : "secondary"}
-                  disabled={isLoading}
-                  onClick={() => handleCheckout(plan.id)}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    "Get Started"
-                  )}
-                </Button>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-3xl font-bold">{plan.price}</span>
+                {plan.priceSuffix && (
+                  <span className="text-muted-foreground">{plan.priceSuffix}</span>
+                )}
               </div>
-            );
-          })}
+
+              <div className="mt-3 space-y-1">
+                {plan.allowance && (
+                  <p className="text-xs font-medium text-primary">{plan.allowance}</p>
+                )}
+                {plan.bestFor && (
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Best for:</span> {plan.bestFor}
+                  </p>
+                )}
+              </div>
+
+              <ul className="mt-6 flex-1 space-y-2.5">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {plan.overage && (
+                <p className="mt-5 border-t border-border pt-3 text-xs text-muted-foreground">
+                  {plan.overage}
+                </p>
+              )}
+
+              <Button
+                asChild
+                className="mt-6 w-full rounded-full"
+                variant={plan.popular ? "default" : "secondary"}
+              >
+                <Link to="/get-started">{plan.cta}</Link>
+              </Button>
+            </div>
+          ))}
         </div>
+
+        <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-muted-foreground">
+          * A one-time $500 setup fee applies to all plans. We build, configure, and test your
+          custom AI agent — you don't touch any technology.
+        </p>
       </div>
     </div>
   );
