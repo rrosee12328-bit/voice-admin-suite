@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Copy, ExternalLink, Loader2, Mail, Send } from "lucide-react";
+import { Copy, ExternalLink, Eye, Loader2, Mail, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { Button } from "@/components/ui/button";
@@ -124,6 +124,16 @@ export function SendIntakeLinkDialog({ row }: { row: IntakeRow }) {
       toast.error(e instanceof Error ? e.message : "Failed to send");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handlePreview = async () => {
+    try {
+      await savePlan.mutateAsync();
+      window.open(link, "_blank", "noopener,noreferrer");
+      toast.success("Plan saved — opened intake in a new tab so you can test checkout");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save plan");
     }
   };
 
@@ -261,6 +271,13 @@ export function SendIntakeLinkDialog({ row }: { row: IntakeRow }) {
             ) : (
               "Save plan only"
             )}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handlePreview}
+            disabled={savePlan.isPending || sending}
+          >
+            <Eye className="mr-2 h-4 w-4" /> Save & preview checkout
           </Button>
           <Button onClick={handleSend} disabled={sending || savePlan.isPending}>
             {sending ? (
