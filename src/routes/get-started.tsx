@@ -22,7 +22,7 @@ export const Route = createFileRoute("/get-started")({
   component: GetStartedPage,
 });
 
-type PlanId = "phone_starter" | "phone_email" | "ai_front_office" | "custom";
+type PlanId = "phone_starter" | "ai_front_office" | "custom";
 
 type PlanDef = {
   id: PlanId;
