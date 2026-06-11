@@ -176,6 +176,11 @@ function GetStartedPage() {
             __first_name: firstName,
             __last_name: lastName,
             __source: "self_serve",
+            business_name: businessName,
+            primary_phone: phone,
+            contact_first_name: firstName,
+            contact_last_name: lastName,
+            contact_name: `${firstName} ${lastName}`.trim(),
           },
         })
         .select("token")
