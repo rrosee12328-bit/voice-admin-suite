@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ArrowLeft, Eye, ExternalLink, Loader2, Mail, Receipt } from "lucide-react";
@@ -28,6 +28,23 @@ export const Route = createFileRoute("/_authenticated/admin/clients/$slug")({
 const VEKTISS_FN = "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1";
 const VEKTISS_ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
+
+type IntakeContact = {
+  id: string;
+  businessName: string | null;
+  email: string | null;
+  phone: string | null;
+  answers: Record<string, unknown>;
+};
+
+function normalizeClientName(value: string | null | undefined) {
+  return (value ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+}
+
+function textAnswer(answers: Record<string, unknown>, key: string) {
+  const value = answers[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
 
 function AdminClientView() {
   const { slug } = Route.useParams();
