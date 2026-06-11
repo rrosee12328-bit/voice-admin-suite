@@ -322,6 +322,16 @@ function GetStartedPage() {
                         <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
                       )}
                     </div>
+                    {(plan.tagline || plan.allowance) && (
+                      <div className="mt-2 space-y-0.5">
+                        {plan.tagline && (
+                          <p className="text-xs text-muted-foreground">{plan.tagline}</p>
+                        )}
+                        {plan.allowance && (
+                          <p className="text-xs font-medium text-primary">{plan.allowance}</p>
+                        )}
+                      </div>
+                    )}
                     <ul className="mt-5 flex-1 space-y-2">
                       {plan.features.map((f) => (
                         <li key={f} className="flex items-start gap-2 text-sm">
