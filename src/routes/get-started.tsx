@@ -30,8 +30,10 @@ type PlanDef = {
   price: string;
   priceSuffix?: string;
   tagline?: string;
+  bestFor?: string;
   allowance?: string;
   features: string[];
+  overage?: string;
   popular?: boolean;
 };
 
@@ -41,8 +43,9 @@ const PLANS: PlanDef[] = [
     name: "Phone Starter",
     price: "$45.99",
     priceSuffix: "/mo",
-    tagline: "Best for solo operators",
-    allowance: "60 phone minutes/mo",
+    tagline: "Never miss another call.",
+    bestFor: "Solo operators",
+    allowance: "60 phone minutes / mo",
     features: [
       "24/7 AI receptionist",
       "Smart call routing",
@@ -51,16 +54,18 @@ const PLANS: PlanDef[] = [
       "Call recordings + summaries",
       "Email alerts after every call",
       "Done-for-you setup",
-      "30-day money-back guarantee",
+      "30-day money-back",
     ],
+    overage: "$0.25 / extra minute",
   },
   {
     id: "ai_front_office",
     name: "AI Front Office",
-    price: "$199.99",
+    price: "$199",
     priceSuffix: "/mo",
-    tagline: "Best for established businesses scaling",
-    allowance: "500 minutes + 500 emails/mo",
+    tagline: "Your full virtual receptionist.",
+    bestFor: "Growing teams (100+ calls/mo)",
+    allowance: "500 minutes + 500 emails / mo",
     features: [
       "Everything in Phone Starter, plus:",
       "Intake form delivery",
@@ -75,13 +80,24 @@ const PLANS: PlanDef[] = [
       "Caller memory",
       "Priority support",
     ],
+    overage: "$0.15 / min · $0.03 / email",
     popular: true,
   },
   {
     id: "custom",
     name: "Custom",
-    price: "Let's talk",
-    features: ["SMS and more", "Enterprise/custom needs", "Book a discovery call"],
+    price: "Let's Talk",
+    tagline: "Built around your workflow.",
+    bestFor: "Multi-location & enterprise",
+    allowance: "Unlimited volume",
+    features: [
+      "Everything in AI Front Office, plus:",
+      "Custom CRM integrations",
+      "Multi-location support",
+      "Outbound AI calling",
+      "Dedicated account manager",
+    ],
+    overage: "Volume-based pricing",
   },
 ];
 
