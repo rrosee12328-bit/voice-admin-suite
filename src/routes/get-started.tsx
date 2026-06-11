@@ -313,20 +313,42 @@ function GetStartedPage() {
                   <Input
                     id="firstName"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => {
+                      setFirstName(e.target.value);
+                      if (touched.firstName) validateField("firstName", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("firstName")}
                     autoComplete="given-name"
-                    required
+                    aria-invalid={!!errors.firstName}
+                    aria-describedby={errors.firstName ? "firstName-error" : undefined}
+                    className={errors.firstName && touched.firstName ? "border-destructive" : ""}
                   />
+                  {errors.firstName && touched.firstName && (
+                    <p id="firstName-error" className="text-xs text-destructive">
+                      {errors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="businessName">Business name *</Label>
                   <Input
                     id="businessName"
                     value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
+                    onChange={(e) => {
+                      setBusinessName(e.target.value);
+                      if (touched.businessName) validateField("businessName", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("businessName")}
                     autoComplete="organization"
-                    required
+                    aria-invalid={!!errors.businessName}
+                    aria-describedby={errors.businessName ? "businessName-error" : undefined}
+                    className={errors.businessName && touched.businessName ? "border-destructive" : ""}
                   />
+                  {errors.businessName && touched.businessName && (
+                    <p id="businessName-error" className="text-xs text-destructive">
+                      {errors.businessName}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email *</Label>
@@ -334,10 +356,21 @@ function GetStartedPage() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (touched.email) validateField("email", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("email")}
                     autoComplete="email"
-                    required
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                    className={errors.email && touched.email ? "border-destructive" : ""}
                   />
+                  {errors.email && touched.email && (
+                    <p id="email-error" className="text-xs text-destructive">
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">Phone *</Label>
@@ -345,10 +378,23 @@ function GetStartedPage() {
                     id="phone"
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      const formatted = formatPhoneInput(e.target.value);
+                      setPhone(formatted);
+                      if (touched.phone) validateField("phone", formatted);
+                    }}
+                    onBlur={() => handleBlur("phone")}
                     autoComplete="tel"
-                    required
+                    placeholder="(555) 123-4567"
+                    aria-invalid={!!errors.phone}
+                    aria-describedby={errors.phone ? "phone-error" : undefined}
+                    className={errors.phone && touched.phone ? "border-destructive" : ""}
                   />
+                  {errors.phone && touched.phone && (
+                    <p id="phone-error" className="text-xs text-destructive">
+                      {errors.phone}
+                    </p>
+                  )}
                 </div>
               </div>
               <Button
