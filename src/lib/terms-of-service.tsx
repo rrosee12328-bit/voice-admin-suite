@@ -89,12 +89,12 @@ export function TermsOfServiceContent() {
       <h3>6.3 Standard Monthly Plan Pricing</h3>
       <table>
         <thead>
-          <tr><th>Plan</th><th>Monthly Price</th><th>Included Minutes</th></tr>
+          <tr><th>Plan</th><th>Monthly Price</th><th>Included Usage</th></tr>
         </thead>
         <tbody>
-          <tr><td>Phone Starter</td><td>$45.99/mo</td><td>100 min/mo</td></tr>
-          <tr><td>Phone Pro</td><td>$99.99/mo</td><td>300 min/mo</td></tr>
-          <tr><td>Phone Elite</td><td>$199.99/mo</td><td>600 min/mo</td></tr>
+          <tr><td>Phone Starter</td><td>$45.99/mo</td><td>60 phone minutes / mo</td></tr>
+          <tr><td>AI Front Office</td><td>$199/mo</td><td>500 minutes + 500 emails / mo</td></tr>
+          <tr><td>Custom</td><td>Quoted individually</td><td>Unlimited volume</td></tr>
         </tbody>
       </table>
       <p>Pricing is subject to change with 30 days' advance written notice to the email address on file.</p>
