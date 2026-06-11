@@ -550,7 +550,7 @@ function ReviewAndPay({
             />
             <span>
               I have read and agree to the Vektiss Terms of Service and Privacy Policy, and
-              I authorize monthly billing for the {PLAN_LABEL[plan]} plan at ${PLAN_PRICE[plan]}/mo.
+              I authorize monthly billing for the {displayLabel} plan at ${displayPrice}/mo.
             </span>
           </label>
         </CardContent>
