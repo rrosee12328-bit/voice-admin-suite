@@ -28,11 +28,14 @@ type PlanId = "phone_starter" | "ai_front_office" | "custom";
 type PlanDef = {
   id: PlanId;
   name: string;
+  icon: LucideIcon;
   price: string;
   priceSuffix?: string;
   tagline?: string;
   bestFor?: string;
   allowance?: string;
+  featuresHeader?: string;
+  featuresSubHeader?: string;
   features: string[];
   overage?: string;
   popular?: boolean;
@@ -42,11 +45,13 @@ const PLANS: PlanDef[] = [
   {
     id: "phone_starter",
     name: "Phone Starter",
+    icon: Phone,
     price: "$45.99",
     priceSuffix: "/mo",
     tagline: "Never miss another call.",
     bestFor: "Solo operators",
     allowance: "60 phone minutes / mo",
+    featuresHeader: "What's included",
     features: [
       "24/7 AI receptionist",
       "Smart call routing",
@@ -62,13 +67,15 @@ const PLANS: PlanDef[] = [
   {
     id: "ai_front_office",
     name: "AI Front Office",
+    icon: Mail,
     price: "$199",
     priceSuffix: "/mo",
     tagline: "Your full virtual receptionist.",
     bestFor: "Growing teams (100+ calls/mo)",
     allowance: "500 minutes + 500 emails / mo",
+    featuresHeader: "Everything in Phone Starter",
+    featuresSubHeader: "Plus",
     features: [
-      "Everything in Phone Starter, plus:",
       "Intake form delivery",
       "Email AI assistant",
       "Analytics dashboard",
@@ -87,12 +94,14 @@ const PLANS: PlanDef[] = [
   {
     id: "custom",
     name: "Custom",
+    icon: Sparkles,
     price: "Let's Talk",
     tagline: "Built around your workflow.",
     bestFor: "Multi-location & enterprise",
     allowance: "Unlimited volume",
+    featuresHeader: "Everything in AI Front Office",
+    featuresSubHeader: "Plus",
     features: [
-      "Everything in AI Front Office, plus:",
       "Custom CRM integrations",
       "Multi-location support",
       "Outbound AI calling",
