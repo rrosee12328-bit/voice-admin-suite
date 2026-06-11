@@ -223,6 +223,9 @@ function IntakePage() {
         {isSubmitted ? (
           <ReviewAndPay
             plan={plan}
+            customPrice={(row.answers?.__custom_price as number | undefined) ?? null}
+            customMinutes={(row.answers?.__custom_minutes as number | undefined) ?? null}
+            customLabel={(row.answers?.__custom_label as string | undefined) ?? null}
             contactEmail={contactEmail}
             businessName={pre.business_name || (row.answers?.business_name as string | undefined) || ""}
             contactName={(row.answers?.contact_name as string | undefined) ?? null}
