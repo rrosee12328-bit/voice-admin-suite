@@ -185,7 +185,7 @@ function GetStartedPage() {
             primary_phone: phone,
             contact_first_name: firstName,
             contact_last_name: lastName,
-            contact_name: `${firstName} ${lastName}`.trim(),
+            contact_name: contactName,
           },
         })
         .select("token")
