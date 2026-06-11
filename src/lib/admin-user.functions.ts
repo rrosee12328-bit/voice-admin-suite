@@ -139,13 +139,14 @@ const UpsertTenantAccountSchema = z.object({
   accessToken: z.string().min(10).max(4096),
 });
 
-async function findAuthUserByEmail(baseUrl: string, serviceKey: string, email: string) {
+async function findAuthUserByEmail(baseUrl: string, serviceKey: string, email: string): Promise<{ id: string; email: string | null } | null> {
   const res = await fetch(`${baseUrl}/auth/v1/admin/users?page=1&per_page=1000`, {
     headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
   });
   if (!res.ok) return null;
   const json = (await res.json()) as { users?: Array<{ id?: string; email?: string | null }> };
-  return json.users?.find((user) => user.email?.toLowerCase() === email.toLowerCase()) ?? null;
+  const user = json.users?.find((item) => item.id && item.email?.toLowerCase() === email.toLowerCase());
+  return user?.id ? { id: user.id, email: user.email ?? null } : null;
 }
 
 export const getClientAccountForTenant = createServerFn({ method: "POST" })
