@@ -1,0 +1,122 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+const VEKTISS_URL = "https://hygmztvpmmyxuomjwrbt.supabase.co";
+const VEKTISS_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
+
+function vektissEnv() {
+  return {
+    baseUrl: process.env.VEKTISS_SUPABASE_URL || VEKTISS_URL,
+    anonKey: process.env.VEKTISS_SUPABASE_ANON_KEY || VEKTISS_ANON_KEY,
+    serviceKey: process.env.VEKTISS_SUPABASE_SERVICE_ROLE_KEY || "",
+  };
+}
+
+async function requireSuperAdmin(accessToken: string) {
+  const { baseUrl, anonKey } = vektissEnv();
+  const userRes = await fetch(`${baseUrl}/auth/v1/user`, {
+    headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` },
+  });
+  if (!userRes.ok) throw new Error("Unauthorized: could not verify caller.");
+  const user = (await userRes.json()) as { id?: string };
+  if (!user.id) throw new Error("Unauthorized: could not verify caller.");
+
+  const profRes = await fetch(
+    `${baseUrl}/rest/v1/profiles?id=eq.${user.id}&select=role`,
+    { headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` } },
+  );
+  const rows = (await profRes.json()) as Array<{ role?: string }>;
+  const role = rows?.[0]?.role;
+  if (role !== "super_admin" && role !== "admin") {
+    throw new Error("Forbidden: super admin role required.");
+  }
+  return user.id;
+}
+
+const ResetSchema = z.object({
+  email: z.string().email().max(320),
+  accessToken: z.string().min(10).max(4096),
+  redirectTo: z.string().url().max(2048).optional(),
+});
+
+export const sendClientPasswordReset = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ResetSchema.parse(input))
+  .handler(async ({ data }) => {
+    await requireSuperAdmin(data.accessToken);
+    const { baseUrl, anonKey } = vektissEnv();
+
+    const body: Record<string, unknown> = { email: data.email };
+    if (data.redirectTo) body.redirect_to = data.redirectTo;
+
+    const res = await fetch(`${baseUrl}/auth/v1/recover`, {
+      method: "POST",
+      headers: {
+        apikey: anonKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Reset email failed (${res.status}): ${text.slice(0, 300)}`);
+    }
+    return { ok: true as const };
+  });
+
+const UpdateEmailSchema = z.object({
+  userId: z.string().uuid(),
+  newEmail: z.string().email().max(320),
+  accessToken: z.string().min(10).max(4096),
+});
+
+export const updateClientEmail = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => UpdateEmailSchema.parse(input))
+  .handler(async ({ data }) => {
+    await requireSuperAdmin(data.accessToken);
+    const { baseUrl, anonKey, serviceKey } = vektissEnv();
+    if (!serviceKey) {
+      throw new Error(
+        "Updating a client's email requires the Vektiss service-role key. Add VEKTISS_SUPABASE_SERVICE_ROLE_KEY in project secrets.",
+      );
+    }
+
+    // Update auth.users email via Admin API
+    const authRes = await fetch(`${baseUrl}/auth/v1/admin/users/${data.userId}`, {
+      method: "PUT",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: data.newEmail, email_confirm: true }),
+    });
+    if (!authRes.ok) {
+      const text = await authRes.text().catch(() => "");
+      throw new Error(`Auth update failed (${authRes.status}): ${text.slice(0, 300)}`);
+    }
+
+    // Mirror to profiles.email (best-effort, ignore if column absent)
+    await fetch(
+      `${baseUrl}/rest/v1/profiles?id=eq.${data.userId}`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ email: data.newEmail }),
+      },
+    ).catch(() => {});
+
+    // Trigger password reset so they can set a password for the new email
+    await fetch(`${baseUrl}/auth/v1/recover`, {
+      method: "POST",
+      headers: { apikey: anonKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: data.newEmail }),
+    }).catch(() => {});
+
+    return { ok: true as const };
+  });
