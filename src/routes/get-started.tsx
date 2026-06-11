@@ -276,6 +276,10 @@ function GetStartedPage() {
           <p className="mt-3 text-base text-muted-foreground">
             Pick a plan, tell us about your business, and we'll send your setup link.
           </p>
+          <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+            $500 one-time setup fee — done-for-you onboarding
+          </div>
         </div>
 
         {done ? (
