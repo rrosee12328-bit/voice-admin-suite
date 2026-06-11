@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useCallback, useEffect } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Phone, Mail, Sparkles, Plus } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import vektissLogo from "@/assets/vektiss-logo.png";
@@ -27,11 +28,14 @@ type PlanId = "phone_starter" | "ai_front_office" | "custom";
 type PlanDef = {
   id: PlanId;
   name: string;
+  icon: LucideIcon;
   price: string;
   priceSuffix?: string;
   tagline?: string;
   bestFor?: string;
   allowance?: string;
+  featuresHeader?: string;
+  featuresSubHeader?: string;
   features: string[];
   overage?: string;
   popular?: boolean;
@@ -41,11 +45,13 @@ const PLANS: PlanDef[] = [
   {
     id: "phone_starter",
     name: "Phone Starter",
+    icon: Phone,
     price: "$45.99",
     priceSuffix: "/mo",
     tagline: "Never miss another call.",
     bestFor: "Solo operators",
     allowance: "60 phone minutes / mo",
+    featuresHeader: "What's included",
     features: [
       "24/7 AI receptionist",
       "Smart call routing",
@@ -61,13 +67,15 @@ const PLANS: PlanDef[] = [
   {
     id: "ai_front_office",
     name: "AI Front Office",
+    icon: Mail,
     price: "$199",
     priceSuffix: "/mo",
     tagline: "Your full virtual receptionist.",
     bestFor: "Growing teams (100+ calls/mo)",
     allowance: "500 minutes + 500 emails / mo",
+    featuresHeader: "Everything in Phone Starter",
+    featuresSubHeader: "Plus",
     features: [
-      "Everything in Phone Starter, plus:",
       "Intake form delivery",
       "Email AI assistant",
       "Analytics dashboard",
@@ -86,12 +94,14 @@ const PLANS: PlanDef[] = [
   {
     id: "custom",
     name: "Custom",
+    icon: Sparkles,
     price: "Let's Talk",
     tagline: "Built around your workflow.",
     bestFor: "Multi-location & enterprise",
     allowance: "Unlimited volume",
+    featuresHeader: "Everything in AI Front Office",
+    featuresSubHeader: "Plus",
     features: [
-      "Everything in AI Front Office, plus:",
       "Custom CRM integrations",
       "Multi-location support",
       "Outbound AI calling",
@@ -299,23 +309,27 @@ function GetStartedPage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-3 md:items-start">
               {PLANS.map((plan) => {
                 const isSelected = selected === plan.id;
+                const Icon = plan.icon;
                 return (
                   <button
                     key={plan.id}
                     type="button"
                     onClick={() => setSelected(plan.id)}
                     className={cn(
-                      "relative flex flex-col rounded-2xl border bg-card p-6 text-left shadow-sm transition-all",
+                      "relative flex flex-col rounded-2xl border bg-card p-7 text-left shadow-sm transition-all",
                       isSelected
-                        ? "border-primary ring-2 ring-primary/40 shadow-md"
-                        : "border-border hover:border-primary/40",
+                        ? "border-primary ring-2 ring-primary/30 shadow-md"
+                        : plan.popular
+                          ? "border-primary/60 hover:border-primary"
+                          : "border-border hover:border-primary/40",
                     )}
                   >
                     {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+                      <div className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary-foreground shadow-sm">
+                        <Plus className="h-3 w-3" />
                         Most Popular
                       </div>
                     )}
@@ -324,53 +338,71 @@ function GetStartedPage() {
                         <Check className="h-3.5 w-3.5" />
                       </div>
                     )}
-                    <h3 className="text-lg font-semibold">{plan.name}</h3>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
+                        <Icon className="h-4.5 w-4.5" strokeWidth={2} />
+                      </div>
+                      <h3 className="text-lg font-semibold">{plan.name}</h3>
+                    </div>
                     {plan.tagline && (
-                      <p className="mt-1 text-sm text-muted-foreground">{plan.tagline}</p>
+                      <p className="mt-3 text-sm text-muted-foreground">{plan.tagline}</p>
                     )}
-                    <div className="mt-4 flex items-baseline gap-1">
-                      <span className="text-3xl font-bold tracking-tight">{plan.price}</span>
+
+                    <div className="mt-5 flex items-baseline gap-1">
+                      <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
                       {plan.priceSuffix && (
                         <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
                       )}
                     </div>
 
+                    <div className="my-6 border-t border-border" />
+
                     {plan.allowance && (
-                      <div className="mt-5">
+                      <div className="rounded-xl bg-accent p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Includes
                         </p>
-                        <p className="mt-1 text-sm font-medium text-foreground">
+                        <p className="mt-1 text-sm font-semibold text-foreground">
                           {plan.allowance}
                         </p>
                       </div>
                     )}
 
                     {plan.bestFor && (
-                      <div className="mt-4">
+                      <div className="mt-3 rounded-xl bg-accent p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Best for
                         </p>
-                        <p className="mt-1 text-sm text-foreground">{plan.bestFor}</p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {plan.bestFor}
+                        </p>
                       </div>
                     )}
 
-                    <div className="mt-5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        What's included
-                      </p>
-                      <ul className="mt-2 flex-1 space-y-2">
+                    <div className="mt-6 flex-1">
+                      {plan.featuresHeader && (
+                        <p className="text-sm font-semibold text-foreground">
+                          {plan.featuresHeader}
+                        </p>
+                      )}
+                      {plan.featuresSubHeader && (
+                        <p className="mt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {plan.featuresSubHeader}
+                        </p>
+                      )}
+                      <ul className={cn("space-y-2.5", plan.featuresSubHeader ? "mt-2" : "mt-3")}>
                         {plan.features.map((f) => (
                           <li key={f} className="flex items-start gap-2 text-sm">
                             <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                            <span>{f}</span>
+                            <span className="text-foreground/90">{f}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
 
                     {plan.overage && (
-                      <p className="mt-5 border-t border-border pt-3 text-xs text-muted-foreground">
+                      <p className="mt-6 border-t border-border pt-4 text-xs font-medium text-muted-foreground">
                         {plan.overage}
                       </p>
                     )}
