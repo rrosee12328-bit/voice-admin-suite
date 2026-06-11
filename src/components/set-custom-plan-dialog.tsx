@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Copy, ExternalLink, Loader2, Mail, Settings2 } from "lucide-react";
+import { Copy, ExternalLink, Eye, Loader2, Mail, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { Button } from "@/components/ui/button";
