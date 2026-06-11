@@ -223,6 +223,9 @@ function IntakePage() {
         {isSubmitted ? (
           <ReviewAndPay
             plan={plan}
+            customPrice={(row.answers?.__custom_price as number | undefined) ?? null}
+            customMinutes={(row.answers?.__custom_minutes as number | undefined) ?? null}
+            customLabel={(row.answers?.__custom_label as string | undefined) ?? null}
             contactEmail={contactEmail}
             businessName={pre.business_name || (row.answers?.business_name as string | undefined) || ""}
             contactName={(row.answers?.contact_name as string | undefined) ?? null}
@@ -354,6 +357,9 @@ function QuestionField({
 
 function ReviewAndPay({
   plan,
+  customPrice,
+  customMinutes,
+  customLabel,
   contactEmail,
   businessName,
   contactName,
@@ -362,6 +368,9 @@ function ReviewAndPay({
   reopen,
 }: {
   plan: Plan | null;
+  customPrice: number | null;
+  customMinutes: number | null;
+  customLabel: string | null;
   contactEmail: string | null;
   businessName: string;
   contactName: string | null;
@@ -390,7 +399,10 @@ function ReviewAndPay({
   };
   const [loading, setLoading] = useState(false);
 
-  if (!plan) {
+  // A custom plan is "ready to pay" only when the admin has set a price.
+  const customReady = plan === "custom" && customPrice != null && customPrice > 0;
+
+  if (!plan || (plan === "custom" && !customReady)) {
     return (
       <Card>
         <CardHeader>
@@ -412,7 +424,19 @@ function ReviewAndPay({
     );
   }
 
-  const features = PLAN_FEATURES[plan];
+  const isCustom = plan === "custom";
+  const displayLabel = isCustom ? (customLabel || "Custom Plan") : PLAN_LABEL[plan];
+  const displayPrice = isCustom ? (customPrice as number) : PLAN_PRICE[plan];
+  const features = isCustom
+    ? {
+        minutes: `${customMinutes ?? 0} minutes/month included`,
+        bullets: [
+          "Tailored to your business",
+          "Custom call handling & integrations",
+          "Priority support",
+        ],
+      }
+    : PLAN_FEATURES[plan];
 
   const handlePay = async () => {
     setLoading(true);
@@ -447,7 +471,9 @@ function ReviewAndPay({
           client_name: clientFirstName,
           client_email: contactEmail ?? "",
           client_phone: contactPhone,
-          plan_price: String(PLAN_PRICE[plan]),
+          plan_price: String(displayPrice),
+          plan_label: displayLabel,
+          included_minutes: isCustom ? customMinutes ?? undefined : undefined,
         }),
       });
       if (!res.ok) throw new Error(`Checkout failed (${res.status})`);
@@ -468,9 +494,9 @@ function ReviewAndPay({
       <Card className="border-primary/30">
         <CardHeader>
           <CardTitle className="flex flex-wrap items-baseline justify-between gap-2 text-lg">
-            <span>{PLAN_LABEL[plan]}</span>
+            <span>{displayLabel}</span>
             <span className="text-base font-medium text-muted-foreground">
-              ${PLAN_PRICE[plan]}/mo
+              ${displayPrice}/mo
             </span>
           </CardTitle>
           <p className="text-sm text-muted-foreground">{features.minutes}</p>
@@ -524,7 +550,7 @@ function ReviewAndPay({
             />
             <span>
               I have read and agree to the Vektiss Terms of Service and Privacy Policy, and
-              I authorize monthly billing for the {PLAN_LABEL[plan]} plan at ${PLAN_PRICE[plan]}/mo.
+              I authorize monthly billing for the {displayLabel} plan at ${displayPrice}/mo.
             </span>
           </label>
         </CardContent>
