@@ -327,6 +327,27 @@ function GetStartedPage() {
                   )}
                 </div>
                 <div className="space-y-1.5">
+                  <Label htmlFor="lastName">Last name *</Label>
+                  <Input
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => {
+                      setLastName(e.target.value);
+                      if (touched.lastName) validateField("lastName", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("lastName")}
+                    autoComplete="family-name"
+                    aria-invalid={!!errors.lastName}
+                    aria-describedby={errors.lastName ? "lastName-error" : undefined}
+                    className={errors.lastName && touched.lastName ? "border-destructive" : ""}
+                  />
+                  {errors.lastName && touched.lastName && (
+                    <p id="lastName-error" className="text-xs text-destructive">
+                      {errors.lastName}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
                   <Label htmlFor="businessName">Business name *</Label>
                   <Input
                     id="businessName"
