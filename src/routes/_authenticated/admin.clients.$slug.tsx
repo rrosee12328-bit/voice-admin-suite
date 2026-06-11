@@ -93,6 +93,7 @@ function AdminClientView() {
   const { data: adminAccount } = useQuery({
     queryKey: ["client-account-for-tenant", tenant?.id],
     enabled: !!tenant?.id,
+    retry: false,
     queryFn: async () => {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -302,6 +303,7 @@ function PrimaryAccountSection({
   const authQ = useQuery({
     queryKey: ["client-auth-info", userId],
     enabled: !!userId,
+    retry: false,
     queryFn: async () => {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -464,12 +466,6 @@ function PrimaryAccountSection({
           <dd className="mt-1 font-mono text-xs truncate">{primaryUser?.id || intakeContact?.id || "—"}</dd>
         </div>
       </dl>
-
-      {authQ.isError && (
-        <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          {authQ.error instanceof Error ? authQ.error.message : "Failed to load auth details."}
-        </div>
-      )}
 
       <div className="mt-5 space-y-2">
         <Label htmlFor="client-email" className="text-xs text-muted-foreground">
