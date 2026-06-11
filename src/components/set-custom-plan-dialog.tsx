@@ -190,7 +190,7 @@ export function SetCustomPlanDialog({ row }: { row: IntakeRow }) {
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 sm:flex-wrap">
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
@@ -206,6 +206,20 @@ export function SetCustomPlanDialog({ row }: { row: IntakeRow }) {
             ) : (
               "Save plan"
             )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                await saveMutation.mutateAsync();
+                window.open(link, "_blank", "noopener,noreferrer");
+              } catch {
+                /* toast already shown */
+              }
+            }}
+            disabled={saveMutation.isPending || sending}
+          >
+            <Eye className="mr-2 h-4 w-4" /> Save & preview
           </Button>
           <Button onClick={handleSendInvite} disabled={sending || saveMutation.isPending}>
             {sending ? (
