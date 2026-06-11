@@ -331,10 +331,15 @@ function GetStartedPage() {
                         <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
                       )}
                     </div>
-                    {(plan.tagline || plan.allowance) && (
-                      <div className="mt-2 space-y-0.5">
+                    {(plan.tagline || plan.bestFor || plan.allowance) && (
+                      <div className="mt-2 space-y-1">
                         {plan.tagline && (
                           <p className="text-xs text-muted-foreground">{plan.tagline}</p>
+                        )}
+                        {plan.bestFor && (
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground">Best for:</span> {plan.bestFor}
+                          </p>
                         )}
                         {plan.allowance && (
                           <p className="text-xs font-medium text-primary">{plan.allowance}</p>
@@ -349,6 +354,11 @@ function GetStartedPage() {
                         </li>
                       ))}
                     </ul>
+                    {plan.overage && (
+                      <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+                        {plan.overage}
+                      </p>
+                    )}
                   </button>
                 );
               })}
