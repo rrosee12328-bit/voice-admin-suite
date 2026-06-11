@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
@@ -99,10 +99,15 @@ function GetStartedPage() {
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [contactName, setContactName] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    setContactName(`${firstName} ${lastName}`.trim());
+  }, [firstName, lastName]);
 
   const getValue = useCallback(
     (name: keyof FieldErrors) =>
@@ -180,7 +185,7 @@ function GetStartedPage() {
             primary_phone: phone,
             contact_first_name: firstName,
             contact_last_name: lastName,
-            contact_name: `${firstName} ${lastName}`.trim(),
+            contact_name: contactName,
           },
         })
         .select("token")
@@ -189,9 +194,8 @@ function GetStartedPage() {
       const token = data!.token as string;
 
       if (selected === "custom") {
-        const fullName = `${firstName} ${lastName}`.trim();
         const url = `https://calendly.com/vektiss-info/30-minute-vektiss-discovery?name=${encodeURIComponent(
-          fullName,
+          contactName,
         )}&email=${encodeURIComponent(email)}`;
         window.location.href = url;
         return;
