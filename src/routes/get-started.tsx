@@ -66,6 +66,7 @@ const PLANS: PlanDef[] = [
 
 type FieldErrors = {
   firstName?: string;
+  lastName?: string;
   businessName?: string;
   email?: string;
   phone?: string;
