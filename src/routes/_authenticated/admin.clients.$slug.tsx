@@ -404,18 +404,18 @@ function PrimaryAccountSection({
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold">Primary account on file</h2>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize">
-          {(primaryUser.role ?? "client").replace(/_/g, " ")}
+          {primaryUser ? (primaryUser.role ?? "client").replace(/_/g, " ") : "intake contact"}
         </span>
       </div>
 
       <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs text-muted-foreground">Name</dt>
-          <dd className="mt-1">{primaryUser.name || primaryUser.full_name || "—"}</dd>
+          <dd className="mt-1">{primaryUser?.name || primaryUser?.full_name || intakeContact?.businessName || "—"}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">User ID</dt>
-          <dd className="mt-1 font-mono text-xs truncate">{primaryUser.id}</dd>
+          <dt className="text-xs text-muted-foreground">Record ID</dt>
+          <dd className="mt-1 font-mono text-xs truncate">{primaryUser?.id || intakeContact?.id || "—"}</dd>
         </div>
       </dl>
 
