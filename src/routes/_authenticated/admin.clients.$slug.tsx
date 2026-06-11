@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { format } from "date-fns";
-import { ArrowLeft, Eye, ExternalLink, Loader2, Receipt } from "lucide-react";
+import { ArrowLeft, Eye, ExternalLink, Loader2, Mail, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Tenant, Profile, Invoice } from "@/integrations/supabase/app-types";
@@ -10,8 +10,11 @@ import { DashboardView } from "./dashboard.index";
 import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
 import { PlanBadge, StatusDot } from "@/components/badges";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/empty-state";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { sendClientPasswordReset, updateClientEmail } from "@/lib/admin-user.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$slug")({
   component: AdminClientView,
@@ -172,28 +175,138 @@ function ClientSettingsView({ tenant, primaryUser }: { tenant: Tenant; primaryUs
         </div>
       </section>
 
+      <PrimaryAccountSection primaryUser={primaryUser} />
+    </div>
+  );
+}
+
+function PrimaryAccountSection({ primaryUser }: { primaryUser: Profile | null }) {
+  const [email, setEmail] = useState(primaryUser?.email ?? "");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+
+  if (!primaryUser) {
+    return (
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Primary account on file</h2>
-        {primaryUser ? (
-          <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">Name</dt>
-              <dd className="mt-1">{primaryUser.name || primaryUser.full_name || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Email</dt>
-              <dd className="mt-1">{primaryUser.email || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Role</dt>
-              <dd className="mt-1 capitalize">{(primaryUser.role ?? "client").replace(/_/g, " ")}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="text-sm text-muted-foreground">No user has accepted the workspace invite yet.</p>
-        )}
+        <p className="text-sm text-muted-foreground">No user has accepted the workspace invite yet.</p>
       </section>
-    </div>
+    );
+  }
+
+  const dirty = email.trim().toLowerCase() !== (primaryUser.email ?? "").trim().toLowerCase();
+
+  async function getToken() {
+    const { data } = await supabase.auth.getSession();
+    let token = data.session?.access_token;
+    if (!token) {
+      const refreshed = await supabase.auth.refreshSession();
+      token = refreshed.data.session?.access_token;
+    }
+    if (!token) throw new Error("Your session has expired. Sign in again.");
+    return token;
+  }
+
+  const handleSendReset = async () => {
+    const target = (primaryUser?.email ?? "").trim();
+    if (!target) {
+      toast.error("No email on file for this user.");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const accessToken = await getToken();
+      await sendClientPasswordReset({
+        data: {
+          email: target,
+          accessToken,
+          redirectTo: `${window.location.origin}/set-password`,
+        },
+      });
+      toast.success(`Password reset email sent to ${target}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send reset email.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleSaveEmail = async () => {
+    const next = email.trim();
+    if (!next || next === primaryUser.email) return;
+    setSaveLoading(true);
+    try {
+      const accessToken = await getToken();
+      await updateClientEmail({
+        data: { userId: primaryUser.id, newEmail: next, accessToken },
+      });
+      toast.success("Email updated and password reset sent.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update email.");
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  return (
+    <section className="rounded-lg border border-border bg-card p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Primary account on file</h2>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize">
+          {(primaryUser.role ?? "client").replace(/_/g, " ")}
+        </span>
+      </div>
+
+      <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-xs text-muted-foreground">Name</dt>
+          <dd className="mt-1">{primaryUser.name || primaryUser.full_name || "—"}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">User ID</dt>
+          <dd className="mt-1 font-mono text-xs truncate">{primaryUser.id}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-5 space-y-2">
+        <Label htmlFor="client-email" className="text-xs text-muted-foreground">Email</Label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            id="client-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="client@example.com"
+            className="flex-1"
+          />
+          <Button
+            variant="outline"
+            onClick={handleSaveEmail}
+            disabled={!dirty || saveLoading}
+          >
+            {saveLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save email
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Saving the email updates the account login and sends a password-reset link to the new address.
+          Requires <code className="font-mono text-[11px]">VEKTISS_SUPABASE_SERVICE_ROLE_KEY</code> in secrets.
+        </p>
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border pt-4">
+        <Button onClick={handleSendReset} disabled={resetLoading || !primaryUser.email}>
+          {resetLoading ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
+          ) : (
+            <><Mail className="mr-2 h-4 w-4" /> Send password reset email</>
+          )}
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          Sends a reset link to <span className="font-medium text-foreground">{primaryUser.email || "—"}</span>.
+        </span>
+      </div>
+    </section>
   );
 }
 
