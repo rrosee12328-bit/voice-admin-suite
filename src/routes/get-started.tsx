@@ -105,6 +105,10 @@ function GetStartedPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
+  useEffect(() => {
+    setContactName(`${firstName} ${lastName}`.trim());
+  }, [firstName, lastName]);
+
   const getValue = useCallback(
     (name: keyof FieldErrors) =>
       name === "firstName"
