@@ -22,7 +22,7 @@ export const Route = createFileRoute("/get-started")({
   component: GetStartedPage,
 });
 
-type PlanId = "phone_starter" | "phone_email" | "ai_front_office" | "custom";
+type PlanId = "phone_starter" | "ai_front_office" | "custom";
 
 type PlanDef = {
   id: PlanId;
@@ -55,23 +55,6 @@ const PLANS: PlanDef[] = [
     ],
   },
   {
-    id: "phone_email",
-    name: "Phone + Email",
-    price: "$89.99",
-    priceSuffix: "/mo",
-    tagline: "Best for growing teams",
-    allowance: "200 minutes + 200 emails/mo",
-    features: [
-      "Everything in Phone Starter, plus:",
-      "Intake form delivery",
-      "Email AI assistant",
-      "Analytics dashboard",
-      "Full call transcripts",
-      "Monthly performance report",
-    ],
-    popular: true,
-  },
-  {
     id: "ai_front_office",
     name: "AI Front Office",
     price: "$199.99",
@@ -79,7 +62,12 @@ const PLANS: PlanDef[] = [
     tagline: "Best for established businesses scaling",
     allowance: "500 minutes + 500 emails/mo",
     features: [
-      "Everything in Phone + Email, plus:",
+      "Everything in Phone Starter, plus:",
+      "Intake form delivery",
+      "Email AI assistant",
+      "Analytics dashboard",
+      "Full call transcripts",
+      "Monthly performance report",
       "Lead scoring (Hot / Warm / Cold)",
       "Calendar sync (Google + Outlook)",
       "Bilingual support (EN / ES)",
@@ -87,6 +75,7 @@ const PLANS: PlanDef[] = [
       "Caller memory",
       "Priority support",
     ],
+    popular: true,
   },
   {
     id: "custom",
@@ -125,7 +114,7 @@ function formatPhoneInput(value: string): string {
 }
 
 function GetStartedPage() {
-  const [selected, setSelected] = useState<PlanId>("phone_email");
+  const [selected, setSelected] = useState<PlanId>("ai_front_office");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -294,7 +283,7 @@ function GetStartedPage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-5 md:grid-cols-3">
               {PLANS.map((plan) => {
                 const isSelected = selected === plan.id;
                 return (
