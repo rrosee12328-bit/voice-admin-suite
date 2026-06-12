@@ -67,3 +67,21 @@ export type Invoice = {
   pdf_url: string | null;
   created_at: string;
 };
+
+export type MonthlyUsage = {
+  id: string;
+  tenant_id: string;
+  period_start: string;
+  period_end: string;
+  minutes_included: number;
+  minutes_used: number;
+  overage_minutes: number;
+  overage_amount_cents: number;
+  call_count: number;
+  new_patient_calls: number;
+  appointments_booked: number;
+  transferred_calls: number;
+  plan: string;
+  created_at: string;
+  updated_at: string;
+};
