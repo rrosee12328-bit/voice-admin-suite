@@ -38,6 +38,7 @@ export type Call = {
   tenant_id: string;
   caller_name: string | null;
   caller_phone: string | null;
+  caller_email: string | null;
   call_reason: string | null;
   outcome: string | null;
   appointment_booked: boolean | null;

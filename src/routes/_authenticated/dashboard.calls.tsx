@@ -122,7 +122,7 @@ function CallsPage() {
   );
 
   const filtered = calls.filter((c) => {
-    if (search && !(c.caller_phone || "").includes(search) && !(c.caller_name || "").toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !(c.caller_phone || "").includes(search) && !(c.caller_name || "").toLowerCase().includes(search.toLowerCase()) && !(c.caller_email || "").toLowerCase().includes(search.toLowerCase())) return false;
     if (reasonFilter !== "all" && c.call_reason !== reasonFilter) return false;
     if (outcomeFilter !== "all" && c.outcome !== outcomeFilter) return false;
     if (statusFilter !== "all" && c.status !== statusFilter) return false;
@@ -212,6 +212,7 @@ function CallsPage() {
                   {isSuperAdmin && <th className="px-3 py-2 text-left font-medium">Tenant</th>}
                   <th className="px-3 py-2 text-left font-medium">Caller</th>
                   <th className="px-3 py-2 text-left font-medium">Phone</th>
+                  <th className="px-3 py-2 text-left font-medium">Email</th>
                   <th className="px-3 py-2 text-left font-medium">Date</th>
                   <th className="px-3 py-2 text-left font-medium">Duration</th>
                   <th className="px-3 py-2 text-left font-medium">Reason</th>
@@ -238,6 +239,7 @@ function CallsPage() {
                       )}
                       <td className="px-3 py-2 font-medium">{c.caller_name || "Unknown"}</td>
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">{c.caller_phone || "—"}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{c.caller_email || "—"}</td>
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">
                         {format(new Date(c.created_at), "MMM d, HH:mm")}
                       </td>

@@ -1,5 +1,6 @@
 // Render intake form answers as Markdown and PDF.
 import { INTAKE_SECTIONS, type Question } from "./intake-questions";
+import { FORECLOSURE_INTAKE_SECTIONS } from "./intake-questions-foreclosure";
 
 export type IntakeRow = {
   id: string;
@@ -12,7 +13,13 @@ export type IntakeRow = {
   status: string;
   submitted_at: string | null;
   created_at: string;
+  form_type?: string;
 };
+
+function getSections(row: IntakeRow) {
+  if (row.form_type === "foreclosure_law") return FORECLOSURE_INTAKE_SECTIONS;
+  return INTAKE_SECTIONS;
+}
 
 function renderAnswer(q: Question, value: any): string {
   if (value == null || value === "") return "_(not answered)_";
@@ -35,7 +42,7 @@ export function intakeToMarkdown(row: IntakeRow): string {
   lines.push("---");
   lines.push("");
 
-  for (const section of INTAKE_SECTIONS) {
+  for (const section of getSections(row)) {
     lines.push(`## ${section.title}`);
     if (section.intro) {
       lines.push("");
@@ -113,7 +120,7 @@ export async function intakeToPdf(row: IntakeRow): Promise<Blob> {
   doc.line(margin, y, pageW - margin, y);
   y += 14;
 
-  for (const section of INTAKE_SECTIONS) {
+  for (const section of getSections(row)) {
     ensureSpace(40);
     writeText(section.title, { size: 14, bold: true, color: [20, 20, 20], gap: 4 });
     if (section.intro) {

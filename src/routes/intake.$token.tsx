@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { INTAKE_SECTIONS, type Question } from "@/lib/intake-questions";
+import { FORECLOSURE_INTAKE_SECTIONS } from "@/lib/intake-questions-foreclosure";
 import type { Plan } from "@/integrations/supabase/app-types";
 import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
 import { TermsOfServiceContent, TOS_VERSION } from "@/lib/terms-of-service";
@@ -77,6 +78,13 @@ function IntakePage() {
     services: "",
   });
 
+  // Determine which section template to use based on form_type
+  const activeSections = useMemo(() => {
+    const formType = row?.form_type ?? "auto_repair";
+    if (formType === "foreclosure_law") return FORECLOSURE_INTAKE_SECTIONS;
+    return INTAKE_SECTIONS;
+  }, [row?.form_type]);
+
   useEffect(() => {
     if (!row) return;
     setAnswers(row.answers ?? {});
@@ -93,7 +101,7 @@ function IntakePage() {
     if (!row) return;
     setAnswers((prev) => {
       const next = { ...prev };
-      for (const s of INTAKE_SECTIONS) {
+      for (const s of activeSections) {
         for (const q of s.questions) {
           if (q.prefill && (next[q.id] == null || next[q.id] === "")) {
             const v = (row as any)[q.prefill];
@@ -103,7 +111,7 @@ function IntakePage() {
       }
       return next;
     });
-  }, [row]);
+  }, [row, activeSections]);
 
   const saveMutation = useMutation({
     mutationFn: async (submit: boolean) => {
@@ -138,7 +146,7 @@ function IntakePage() {
   const isSubmitted = row?.status === "submitted";
 
   const progress = useMemo(() => {
-    const all = INTAKE_SECTIONS.flatMap((s) => s.questions);
+    const all = activeSections.flatMap((s) => s.questions);
     const filled = all.filter((q) => {
       const v = answers[q.id];
       if (v == null) return false;
@@ -244,7 +252,7 @@ function IntakePage() {
         ) : (
           <>
             <div className="space-y-6">
-              {INTAKE_SECTIONS.map((section) => (
+              {activeSections.map((section) => (
                 <Card key={section.id}>
                   <CardHeader>
                     <CardTitle className="text-lg">{section.title}</CardTitle>

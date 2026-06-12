@@ -58,6 +58,7 @@ function IntakeListPage() {
     contact_phone: "",
     website: "",
     services: "",
+    form_type: "auto_repair" as "auto_repair" | "foreclosure_law",
   });
 
   const createMutation = useMutation({
@@ -69,6 +70,7 @@ function IntakeListPage() {
           contact_phone: form.contact_phone || null,
           website: form.website || null,
           services: form.services || null,
+          form_type: form.form_type,
         })
         .select("token")
         .single();
@@ -78,7 +80,7 @@ function IntakeListPage() {
     onSuccess: (token) => {
       const url = `${window.location.origin}/intake/${token}`;
       setCreatedLink(url);
-      setForm({ business_name: "", contact_phone: "", website: "", services: "" });
+      setForm({ business_name: "", contact_phone: "", website: "", services: "", form_type: "auto_repair" });
       qc.invalidateQueries({ queryKey: ["admin-intakes"] });
       toast.success("Intake link created");
     },
@@ -118,6 +120,18 @@ function IntakeListPage() {
                   <p className="text-sm text-muted-foreground">
                     Pre-fill what you already know — the client can edit anything before submitting.
                   </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="ft">Form template</Label>
+                    <select
+                      id="ft"
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      value={form.form_type}
+                      onChange={(e) => setForm({ ...form, form_type: e.target.value as "auto_repair" | "foreclosure_law" })}
+                    >
+                      <option value="auto_repair">Auto Repair Shop</option>
+                      <option value="foreclosure_law">Foreclosure / Probate Law Office</option>
+                    </select>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="bn">Business name</Label>
                     <Input id="bn" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} />
