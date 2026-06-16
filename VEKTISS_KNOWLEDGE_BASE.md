@@ -92,8 +92,7 @@ Vektiss is one integrated system with four working parts. We don't sell them as 
 
 **All plans include:**
 - One-time $500 setup fee (covers full configuration — you don't touch a thing)
-- No contracts — cancel anytime
-- 30-day money-back guarantee
+- Terms vary by service — our team will walk you through the specifics before you commit
 - Annual pricing available (ask for details)
 
 **AI Front Office ($199/mo) includes:**
@@ -139,7 +138,7 @@ For clients building a full operating system across multiple Vektiss products:
 ## What Makes Vektiss Different
 
 - **Done for you** — clients never touch any technology
-- **No contracts** — cancel anytime, no lock-in
+- **Flexible terms** — standard plans do not require long-term commitments; terms vary by service
 - **Built in-house** — Vektiss built their own AI, infrastructure, dashboard, and tools from scratch
 - **Works with existing tools** — no rip-and-replace, no forced migrations
 - **Operating partner, not a vendor** — Vektiss stays involved after launch to ensure the system runs
@@ -176,7 +175,7 @@ Yes. The AI can route calls to you or your team based on rules you define — em
 Home services, real estate, medical/wellness, professional services, law firms, auto repair, security companies, financial services, and more. If your business gets inbound calls and needs to capture leads, Vektiss Voice can help.
 
 **Is there a contract?**
-No contracts. Cancel anytime. 30-day money-back guarantee on all plans.
+Terms vary by service. Our team will walk you through the specifics for your plan before you commit to anything.
 
 **What does the $500 setup fee cover?**
 Full configuration of your AI receptionist — custom scripts, call routing rules, intake form setup, email and SMS alert configuration, dashboard setup, testing, and go-live support. You don't touch a thing.
