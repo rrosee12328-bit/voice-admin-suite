@@ -43,6 +43,12 @@ export const VEKTISS_LEAD_SECTIONS: Section[] = [
         label: "How did you hear about Vektiss?",
         type: "text",
       },
+      {
+        id: "custom_message",
+        label: "Anything else you'd like us to know?",
+        help: "Optional — share any additional context, ideas, or questions for our team.",
+        type: "textarea",
+      },
     ],
   },
 ];
