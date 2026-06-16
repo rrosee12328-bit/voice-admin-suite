@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { INTAKE_SECTIONS, type Question } from "@/lib/intake-questions";
 import { FORECLOSURE_INTAKE_SECTIONS } from "@/lib/intake-questions-foreclosure";
+import { VEKTISS_LEAD_SECTIONS } from "@/lib/intake-questions-vektiss-lead";
 import type { Plan } from "@/integrations/supabase/app-types";
 import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
 import { TermsOfServiceContent, TOS_VERSION } from "@/lib/terms-of-service";
@@ -82,6 +83,7 @@ function IntakePage() {
   const activeSections = useMemo(() => {
     const formType = row?.form_type ?? "auto_repair";
     if (formType === "foreclosure_law") return FORECLOSURE_INTAKE_SECTIONS;
+    if (formType === "vektiss_lead") return VEKTISS_LEAD_SECTIONS;
     return INTAKE_SECTIONS;
   }, [row?.form_type]);
 
