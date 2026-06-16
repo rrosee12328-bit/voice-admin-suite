@@ -32,6 +32,12 @@ export const VEKTISS_LEAD_SECTIONS: Section[] = [
         label: "Email address",
         type: "text",
       },
+      {
+        id: "best_time_to_call",
+        label: "Best time to call you",
+        help: "e.g. Mornings, afternoons, after 5pm, weekends",
+        type: "text",
+      },
     ],
   },
 ];
