@@ -38,6 +38,12 @@ export const VEKTISS_LEAD_SECTIONS: Section[] = [
         help: "e.g. Mornings, afternoons, after 5pm, weekends",
         type: "text",
       },
+      {
+        id: "looking_for",
+        label: "What are you looking for?",
+        help: "Tell us a little about what you need — we'll come prepared.",
+        type: "textarea",
+      },
     ],
   },
 ];
