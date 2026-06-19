@@ -315,7 +315,7 @@ export function DashboardView({
               <BarChart data={reasonData} layout="vertical" margin={{ left: 20 }}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} width={120} />
+                <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} width={180} interval={0} />
                 <Tooltip
                   contentStyle={{
                     background: "var(--popover)",
