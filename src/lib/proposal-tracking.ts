@@ -1,17 +1,21 @@
 // Supabase-backed proposal tracking.
-// These functions persist proposals to the `proposals` table and track views.
-// The anon key is used for all client-side calls (RLS enforces access).
-// The `record_proposal_view` RPC is SECURITY DEFINER so anonymous visitors can call it.
+// Uses the untyped client because the `proposals` table is not in generated types.
 
-import { supabase } from "@/integrations/supabase/client";
-import type { Database, ProposalStatus } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client-untyped";
 
-export type ProposalRow = Database["public"]["Tables"]["proposals"]["Row"];
+export type ProposalStatus = "sent" | "viewed" | "accepted" | "declined";
 
-/**
- * Save a proposal to the database when a shareable link is generated.
- * Returns the saved row (including the generated `id`).
- */
+export type ProposalRow = {
+  id: string;
+  slug: string;
+  client_name: string;
+  share_url: string;
+  status: ProposalStatus;
+  created_at: string;
+  viewed_at?: string | null;
+  view_count?: number | null;
+};
+
 export async function saveProposal(
   slug: string,
   clientName: string,
@@ -23,18 +27,15 @@ export async function saveProposal(
       slug,
       client_name: clientName,
       share_url: shareUrl,
-      status: "sent" as ProposalStatus,
+      status: "sent",
     })
     .select()
     .single();
 
   if (error) throw new Error(`Failed to save proposal: ${error.message}`);
-  return data;
+  return data as ProposalRow;
 }
 
-/**
- * List all proposals ordered by most recently created.
- */
 export async function listProposals(): Promise<ProposalRow[]> {
   const { data, error } = await supabase
     .from("proposals")
@@ -42,12 +43,9 @@ export async function listProposals(): Promise<ProposalRow[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Failed to list proposals: ${error.message}`);
-  return data ?? [];
+  return (data ?? []) as ProposalRow[];
 }
 
-/**
- * Update the status of a proposal (e.g., mark as accepted or declined).
- */
 export async function updateProposalStatus(
   id: string,
   status: ProposalStatus
@@ -60,20 +58,11 @@ export async function updateProposalStatus(
   if (error) throw new Error(`Failed to update proposal status: ${error.message}`);
 }
 
-/**
- * Delete a proposal record.
- */
 export async function deleteProposal(id: string): Promise<void> {
   const { error } = await supabase.from("proposals").delete().eq("id", id);
   if (error) throw new Error(`Failed to delete proposal: ${error.message}`);
 }
 
-/**
- * Record a view for a proposal.
- * Calls the `record_proposal_view` RPC which is SECURITY DEFINER —
- * safe to call from the public proposal page without authentication.
- * Silently ignores errors (a failed view ping should never break the page).
- */
 export async function recordProposalView(proposalId: string): Promise<void> {
   try {
     const { error } = await supabase.rpc("record_proposal_view", {
@@ -87,9 +76,6 @@ export async function recordProposalView(proposalId: string): Promise<void> {
   }
 }
 
-/**
- * Format a proposal status for display.
- */
 export function formatProposalStatus(status: ProposalStatus): {
   label: string;
   variant: "default" | "secondary" | "destructive" | "outline";
