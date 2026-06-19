@@ -6,8 +6,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type ProposalStatus = "sent" | "viewed" | "accepted" | "declined";
-
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -16,51 +14,13 @@ export type Database = {
   }
   public: {
     Tables: {
-      proposals: {
-        Row: {
-          id: string
-          slug: string
-          client_name: string
-          share_url: string
-          status: ProposalStatus
-          view_count: number
-          last_viewed_at: string | null
-          created_at: string
-          created_by: string | null
-        }
-        Insert: {
-          id?: string
-          slug: string
-          client_name: string
-          share_url: string
-          status?: ProposalStatus
-          view_count?: number
-          last_viewed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-        }
-        Update: {
-          id?: string
-          slug?: string
-          client_name?: string
-          share_url?: string
-          status?: ProposalStatus
-          view_count?: number
-          last_viewed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      record_proposal_view: {
-        Args: { proposal_id: string }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
