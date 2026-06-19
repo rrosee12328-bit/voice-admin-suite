@@ -17,8 +17,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
 } from "recharts";
 import { subDays, format, startOfDay } from "date-fns";
 import { useMe } from "@/lib/me";
@@ -156,6 +154,7 @@ export function DashboardView({
     .map(([name, count]) => ({ name: name.replace(/_/g, " "), count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
+  const topReasonMax = Math.max(1, ...reasonData.map((reason) => reason.count));
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -307,62 +306,33 @@ export function DashboardView({
 
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Top Call Reasons This Week</h2>
-        <div style={{ height: Math.max(224, reasonData.length * 44 + 40) }}>
-          {reasonData.length === 0 ? (
-            <EmptyState title="No call reasons yet" description="Reasons will appear as calls come in." />
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={reasonData} layout="vertical" margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  stroke="var(--muted-foreground)"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  width={260}
-                  interval={0}
-                  tick={({ x, y, payload }) => {
-                    const label = String(payload.value);
-                    const max = 36;
-                    const lines: string[] = [];
-                    const words = label.split(" ");
-                    let cur = "";
-                    for (const w of words) {
-                      if ((cur + " " + w).trim().length > max) {
-                        if (cur) lines.push(cur);
-                        cur = w;
-                      } else {
-                        cur = (cur + " " + w).trim();
-                      }
-                    }
-                    if (cur) lines.push(cur);
-                    return (
-                      <g transform={`translate(${x},${y})`}>
-                        <text textAnchor="end" fill="var(--muted-foreground)" fontSize={11} dy={4 - (lines.length - 1) * 6}>
-                          {lines.map((ln, i) => (
-                            <tspan key={i} x={-6} dy={i === 0 ? 0 : 12}>{ln}</tspan>
-                          ))}
-                        </text>
-                      </g>
-                    );
-                  }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--popover)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 6,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="count" fill="var(--primary)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        {reasonData.length === 0 ? (
+          <EmptyState title="No call reasons yet" description="Reasons will appear as calls come in." />
+        ) : (
+          <div className="space-y-3">
+            {reasonData.map((reason) => (
+              <div
+                key={reason.name}
+                className="grid gap-2 sm:grid-cols-[minmax(12rem,22rem)_1fr] sm:items-center"
+              >
+                <div className="text-sm font-medium leading-snug text-foreground">
+                  {reason.name}
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 flex-1 overflow-hidden rounded-sm bg-muted">
+                    <div
+                      className="h-full rounded-sm bg-primary"
+                      style={{ width: `${Math.max(8, (reason.count / topReasonMax) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="w-8 text-right text-sm font-semibold tabular-nums">
+                    {reason.count}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="text-xs text-muted-foreground">
