@@ -22,19 +22,19 @@ export type ProposalTemplate = {
 
 const foreclosureTexting: ProposalTemplate = {
   slug: "foreclosure-ai-texting-phase-1",
-  name: "Phase 1 — Foreclosure AI Texting Engine",
+  name: "Development — Foreclosure AI Texting Engine",
   category: "Law firm",
   summary:
     "Outbound foreclosure outreach, AI text qualification, and booking handoff. 3-day build, $3,500 one-time + $1,500/mo.",
   defaultClientName: "HC Law Firm",
   build: (clientName) => [
-    { type: "heading", text: "Phase 1 Proposal: Foreclosure AI Texting Engine" },
+    { type: "heading", text: "Development Proposal: Foreclosure AI Texting Engine" },
     { type: "callout", label: "Prepared for", text: clientName },
 
     { type: "subheading", text: "Overview" },
     {
       type: "paragraph",
-      text: `Based on the immediate priority for June, we recommend starting with a focused Phase 1 system designed to help ${clientName} reach foreclosure leads, qualify them through AI-powered text conversations, and route qualified prospects to the right next step.`,
+      text: `Based on the immediate priority for June, we recommend starting with a focused Development system designed to help ${clientName} reach foreclosure leads, qualify them through AI-powered text conversations, and route qualified prospects to the right next step.`,
     },
     {
       type: "paragraph",
@@ -59,7 +59,7 @@ const foreclosureTexting: ProposalTemplate = {
       ],
     },
 
-    { type: "subheading", text: "Phase 1 Includes" },
+    { type: "subheading", text: "Development Includes" },
     {
       type: "bullets",
       items: [
