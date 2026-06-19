@@ -149,23 +149,23 @@ export function DashboardView({
     if (!raw) return "Other";
     const k = raw.toLowerCase().replace(/[_-]+/g, " ").trim();
     const has = (...needles: string[]) => needles.some((n) => k.includes(n));
-    if (has("new patient", "new_patient", "newpt")) return "New pt";
-    if (has("reschedul")) return "Reschedule";
+    if (has("new patient", "new_patient", "newpt")) return "New";
+    if (has("reschedul")) return "Move";
     if (has("cancel")) return "Cancel";
     if (has("appointment", "booking", "schedule", "book")) return "Appt";
-    if (has("billing", "invoice", "payment", "insurance", "cost", "price")) return "Billing";
+    if (has("billing", "invoice", "payment", "insurance", "cost", "price")) return "Bill";
     if (has("prescription", "refill", "medication", "rx")) return "Rx";
-    if (has("result", "lab", "test")) return "Results";
-    if (has("referral")) return "Referral";
-    if (has("hours", "location", "address", "directions")) return "Location";
+    if (has("result", "lab", "test")) return "Lab";
+    if (has("referral")) return "Ref";
+    if (has("hours", "location", "address", "directions")) return "Loc";
     if (has("emergency", "urgent")) return "Urgent";
-    if (has("complaint", "feedback")) return "Complaint";
-    if (has("question", "info", "inquiry", "general")) return "General";
-    if (has("follow up", "followup")) return "Follow-up";
+    if (has("complaint", "feedback")) return "Issue";
+    if (has("question", "info", "inquiry", "general")) return "Info";
+    if (has("follow up", "followup")) return "F/U";
     if (has("unknown")) return "Other";
     // Fallback: title-case the raw label, capped to keep chart labels brief
     const pretty = k.replace(/\b\w/g, (c) => c.toUpperCase());
-    return pretty.length > 16 ? pretty.slice(0, 15) + "…" : pretty;
+    return pretty.length > 8 ? pretty.slice(0, 7) + "…" : pretty;
   };
 
   const reasons = thisWeek.reduce<Record<string, number>>((acc, c) => {
