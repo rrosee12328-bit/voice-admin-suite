@@ -61,16 +61,40 @@ export function OutcomeBadge({ outcome }: { outcome: string | null }) {
 
 export function ReasonBadge({ reason }: { reason: string | null }) {
   if (!reason) return <span className="text-xs text-muted-foreground">—</span>;
-  const key = reason.toLowerCase();
+  const key = reason.toLowerCase().replace(/[_-]+/g, " ").trim();
+  const has = (...needles: string[]) => needles.some((needle) => key.includes(needle));
   const map: Record<string, string> = {
-    new_patient: "bg-info/15 text-info border border-info/30",
+    "new patient": "bg-info/15 text-info border border-info/30",
     appointment: "bg-primary/15 text-primary border border-primary/30",
-    general_question: "bg-slate-badge text-slate-badge-foreground",
+    "general question": "bg-slate-badge text-slate-badge-foreground",
   };
   const cls = map[key] || "bg-slate-badge text-slate-badge-foreground";
+  const label = has("new patient", "newpt")
+    ? "New"
+    : has("reschedul")
+      ? "Move"
+      : has("cancel")
+        ? "Cancel"
+        : has("appointment", "booking", "schedule", "book")
+          ? "Appt"
+          : has("billing", "invoice", "payment", "insurance", "cost", "price")
+            ? "Bill"
+            : has("prescription", "refill", "medication", "rx")
+              ? "Rx"
+              : has("result", "lab", "test")
+                ? "Lab"
+                : has("referral")
+                  ? "Ref"
+                  : has("hours", "location", "address", "directions")
+                    ? "Loc"
+                    : has("question", "info", "inquiry", "general")
+                      ? "Info"
+                      : key.length > 8
+                        ? `${key.slice(0, 7)}…`
+                        : key;
   return (
-    <span className={cn("inline-flex rounded-md px-2 py-0.5 text-xs font-medium capitalize", cls)}>
-      {reason.replace(/_/g, " ")}
+    <span className={cn("inline-flex rounded-md px-2 py-0.5 text-xs font-medium capitalize whitespace-nowrap", cls)}>
+      {label}
     </span>
   );
 }
