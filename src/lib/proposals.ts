@@ -59,7 +59,7 @@ const foreclosureTexting: ProposalTemplate = {
       ],
     },
 
-    { type: "subheading", text: "Phase 1 Includes" },
+    { type: "subheading", text: "Development Includes" },
     {
       type: "bullets",
       items: [
