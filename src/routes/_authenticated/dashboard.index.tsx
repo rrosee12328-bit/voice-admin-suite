@@ -307,15 +307,49 @@ export function DashboardView({
 
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Top Call Reasons This Week</h2>
-        <div className="h-56">
+        <div style={{ height: Math.max(224, reasonData.length * 44 + 40) }}>
           {reasonData.length === 0 ? (
             <EmptyState title="No call reasons yet" description="Reasons will appear as calls come in." />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={reasonData} layout="vertical" margin={{ left: 20 }}>
+              <BarChart data={reasonData} layout="vertical" margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} width={180} interval={0} />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  width={260}
+                  interval={0}
+                  tick={({ x, y, payload }) => {
+                    const label = String(payload.value);
+                    const max = 36;
+                    const lines: string[] = [];
+                    const words = label.split(" ");
+                    let cur = "";
+                    for (const w of words) {
+                      if ((cur + " " + w).trim().length > max) {
+                        if (cur) lines.push(cur);
+                        cur = w;
+                      } else {
+                        cur = (cur + " " + w).trim();
+                      }
+                    }
+                    if (cur) lines.push(cur);
+                    return (
+                      <g transform={`translate(${x},${y})`}>
+                        <text textAnchor="end" fill="var(--muted-foreground)" fontSize={11} dy={4 - (lines.length - 1) * 6}>
+                          {lines.map((ln, i) => (
+                            <tspan key={i} x={-6} dy={i === 0 ? 0 : 12}>{ln}</tspan>
+                          ))}
+                        </text>
+                      </g>
+                    );
+                  }}
+                />
                 <Tooltip
                   contentStyle={{
                     background: "var(--popover)",
