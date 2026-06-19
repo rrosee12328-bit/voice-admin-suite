@@ -10,6 +10,7 @@ import {
   Lock,
   Receipt,
   ClipboardList,
+  FileSignature,
 } from "lucide-react";
 import {
   Sidebar,
@@ -132,6 +133,14 @@ export function AppSidebar() {
                     <Link to="/admin/intake">
                       <ClipboardList />
                       <span>Intake Forms</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin/proposals")}>
+                    <Link to="/admin/proposals">
+                      <FileSignature />
+                      <span>Proposals</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

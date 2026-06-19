@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as GetStartedRouteImport } from './routes/get-started'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProposalSlugRouteImport } from './routes/proposal.$slug'
 import { Route as IntakeTokenRouteImport } from './routes/intake.$token'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -25,6 +26,7 @@ import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_au
 import { Route as AuthenticatedDashboardCallsRouteImport } from './routes/_authenticated/dashboard.calls'
 import { Route as AuthenticatedDashboardBillingRouteImport } from './routes/_authenticated/dashboard.billing'
 import { Route as AuthenticatedDashboardAnalyticsRouteImport } from './routes/_authenticated/dashboard.analytics'
+import { Route as AuthenticatedAdminProposalsRouteImport } from './routes/_authenticated/admin.proposals'
 import { Route as AuthenticatedAdminIntakeRouteImport } from './routes/_authenticated/admin.intake'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedDashboardCallsIdRouteImport } from './routes/_authenticated/dashboard.calls.$id'
@@ -63,6 +65,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProposalSlugRoute = ProposalSlugRouteImport.update({
+  id: '/proposal/$slug',
+  path: '/proposal/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IntakeTokenRoute = IntakeTokenRouteImport.update({
@@ -115,6 +122,12 @@ const AuthenticatedDashboardAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
+const AuthenticatedAdminProposalsRoute =
+  AuthenticatedAdminProposalsRouteImport.update({
+    id: '/proposals',
+    path: '/proposals',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminIntakeRoute =
   AuthenticatedAdminIntakeRouteImport.update({
     id: '/intake',
@@ -156,8 +169,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/intake/$token': typeof IntakeTokenRoute
+  '/proposal/$slug': typeof ProposalSlugRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
+  '/admin/proposals': typeof AuthenticatedAdminProposalsRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -176,8 +191,10 @@ export interface FileRoutesByTo {
   '/set-password': typeof SetPasswordRoute
   '/success': typeof SuccessRoute
   '/intake/$token': typeof IntakeTokenRoute
+  '/proposal/$slug': typeof ProposalSlugRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
+  '/admin/proposals': typeof AuthenticatedAdminProposalsRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -200,8 +217,10 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/intake/$token': typeof IntakeTokenRoute
+  '/proposal/$slug': typeof ProposalSlugRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
+  '/_authenticated/admin/proposals': typeof AuthenticatedAdminProposalsRoute
   '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/_authenticated/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/_authenticated/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
@@ -224,8 +243,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/intake/$token'
+    | '/proposal/$slug'
     | '/admin/analytics'
     | '/admin/intake'
+    | '/admin/proposals'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -244,8 +265,10 @@ export interface FileRouteTypes {
     | '/set-password'
     | '/success'
     | '/intake/$token'
+    | '/proposal/$slug'
     | '/admin/analytics'
     | '/admin/intake'
+    | '/admin/proposals'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -267,8 +290,10 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/intake/$token'
+    | '/proposal/$slug'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/intake'
+    | '/_authenticated/admin/proposals'
     | '/_authenticated/dashboard/analytics'
     | '/_authenticated/dashboard/billing'
     | '/_authenticated/dashboard/calls'
@@ -289,6 +314,7 @@ export interface RootRouteChildren {
   SetPasswordRoute: typeof SetPasswordRoute
   SuccessRoute: typeof SuccessRoute
   IntakeTokenRoute: typeof IntakeTokenRoute
+  ProposalSlugRoute: typeof ProposalSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -340,6 +366,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/proposal/$slug': {
+      id: '/proposal/$slug'
+      path: '/proposal/$slug'
+      fullPath: '/proposal/$slug'
+      preLoaderRoute: typeof ProposalSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/intake/$token': {
@@ -405,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardAnalyticsRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/_authenticated/admin/proposals': {
+      id: '/_authenticated/admin/proposals'
+      path: '/proposals'
+      fullPath: '/admin/proposals'
+      preLoaderRoute: typeof AuthenticatedAdminProposalsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/intake': {
       id: '/_authenticated/admin/intake'
       path: '/intake'
@@ -460,6 +500,7 @@ const AuthenticatedAdminIntakeRouteWithChildren =
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminIntakeRoute: typeof AuthenticatedAdminIntakeRouteWithChildren
+  AuthenticatedAdminProposalsRoute: typeof AuthenticatedAdminProposalsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminClientsSlugRoute: typeof AuthenticatedAdminClientsSlugRoute
 }
@@ -467,6 +508,7 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
   AuthenticatedAdminIntakeRoute: AuthenticatedAdminIntakeRouteWithChildren,
+  AuthenticatedAdminProposalsRoute: AuthenticatedAdminProposalsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminClientsSlugRoute: AuthenticatedAdminClientsSlugRoute,
 }
@@ -534,17 +576,8 @@ const rootRouteChildren: RootRouteChildren = {
   SetPasswordRoute: SetPasswordRoute,
   SuccessRoute: SuccessRoute,
   IntakeTokenRoute: IntakeTokenRoute,
+  ProposalSlugRoute: ProposalSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
