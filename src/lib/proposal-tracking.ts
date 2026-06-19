@@ -13,6 +13,7 @@ export type ProposalRow = {
   status: ProposalStatus;
   created_at: string;
   viewed_at?: string | null;
+  last_viewed_at?: string | null;
   view_count?: number | null;
 };
 
