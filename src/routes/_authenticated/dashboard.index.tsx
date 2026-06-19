@@ -149,23 +149,23 @@ export function DashboardView({
     if (!raw) return "Other";
     const k = raw.toLowerCase().replace(/[_-]+/g, " ").trim();
     const has = (...needles: string[]) => needles.some((n) => k.includes(n));
-    if (has("new patient", "new_patient", "newpt")) return "New patient";
+    if (has("new patient", "new_patient", "newpt")) return "New pt";
     if (has("reschedul")) return "Reschedule";
-    if (has("cancel")) return "Cancellation";
-    if (has("appointment", "booking", "schedule", "book")) return "Appointment";
-    if (has("billing", "invoice", "payment", "insurance", "cost", "price")) return "Billing & insurance";
-    if (has("prescription", "refill", "medication", "rx")) return "Prescription";
-    if (has("result", "lab", "test")) return "Test results";
+    if (has("cancel")) return "Cancel";
+    if (has("appointment", "booking", "schedule", "book")) return "Appt";
+    if (has("billing", "invoice", "payment", "insurance", "cost", "price")) return "Billing";
+    if (has("prescription", "refill", "medication", "rx")) return "Rx";
+    if (has("result", "lab", "test")) return "Results";
     if (has("referral")) return "Referral";
-    if (has("hours", "location", "address", "directions")) return "Hours & location";
+    if (has("hours", "location", "address", "directions")) return "Location";
     if (has("emergency", "urgent")) return "Urgent";
     if (has("complaint", "feedback")) return "Complaint";
-    if (has("question", "info", "inquiry", "general")) return "General question";
+    if (has("question", "info", "inquiry", "general")) return "General";
     if (has("follow up", "followup")) return "Follow-up";
     if (has("unknown")) return "Other";
-    // Fallback: title-case the raw label, capped length
+    // Fallback: title-case the raw label, capped to keep chart labels brief
     const pretty = k.replace(/\b\w/g, (c) => c.toUpperCase());
-    return pretty.length > 28 ? pretty.slice(0, 27) + "…" : pretty;
+    return pretty.length > 16 ? pretty.slice(0, 15) + "…" : pretty;
   };
 
   const reasons = thisWeek.reduce<Record<string, number>>((acc, c) => {
