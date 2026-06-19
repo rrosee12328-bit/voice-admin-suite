@@ -1,15 +1,18 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { getProposalTemplate } from "@/lib/proposals";
 import { ProposalView } from "@/components/proposal-view";
 import { Button } from "@/components/ui/button";
 import { proposalToPdf, downloadBlob } from "@/lib/proposal-export";
+import { recordProposalView } from "@/lib/proposal-tracking";
 import { FileDown } from "lucide-react";
 
-type Search = { client?: string };
+type Search = { client?: string; id?: string };
 
 export const Route = createFileRoute("/proposal/$slug")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     client: typeof search.client === "string" ? search.client : undefined,
+    id: typeof search.id === "string" ? search.id : undefined,
   }),
   head: ({ params }) => {
     const t = getProposalTemplate(params.slug);
@@ -32,9 +35,16 @@ export const Route = createFileRoute("/proposal/$slug")({
 
 function PublicProposalPage() {
   const { slug } = Route.useParams();
-  const { client } = Route.useSearch();
+  const { client, id } = Route.useSearch();
   const template = getProposalTemplate(slug)!;
   const clientName = (client ?? "").trim() || template.defaultClientName;
+
+  // Record a view once when the page mounts (fire-and-forget, silent on error)
+  useEffect(() => {
+    if (id) {
+      recordProposalView(id);
+    }
+  }, [id]);
 
   const downloadPdf = async () => {
     const blob = await proposalToPdf(template, clientName);
