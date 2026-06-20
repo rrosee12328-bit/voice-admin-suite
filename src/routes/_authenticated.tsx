@@ -5,6 +5,7 @@ import type { Profile, Tenant } from "@/integrations/supabase/app-types";
 import { MeProvider, type Me } from "@/lib/me";
 import { BrandingProvider } from "@/lib/branding";
 import { AppSidebar } from "@/components/app-sidebar";
+import { MobileTopBar } from "@/components/mobile-top-bar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -101,6 +102,7 @@ function AuthenticatedLayout() {
         <SidebarProvider>
           <AppSidebar />
           <SidebarInset>
+            <MobileTopBar />
             <Outlet />
           </SidebarInset>
         </SidebarProvider>
