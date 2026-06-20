@@ -6,6 +6,7 @@ import { useMe } from "@/lib/me";
 import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
 import { PlanBadge, StatusDot } from "@/components/badges";
 import { Button } from "@/components/ui/button";
+import { EmailConnections } from "@/components/email-connections";
 
 export const Route = createFileRoute("/_authenticated/dashboard/settings")({
   component: SettingsPage,
@@ -118,6 +119,8 @@ function SettingsPage() {
           To change plans, contact your account manager.
         </p>
       </section>
+
+      {me.tenant?.id && <EmailConnections tenantId={me.tenant.id} />}
 
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Your account</h2>
