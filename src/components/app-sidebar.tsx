@@ -11,6 +11,7 @@ import {
   Receipt,
   ClipboardList,
   FileSignature,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -141,6 +142,14 @@ export function AppSidebar() {
                     <Link to="/admin/proposals">
                       <FileSignature />
                       <span>Proposals</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin/messages")}>
+                    <Link to="/admin/messages">
+                      <MessageSquare />
+                      <span>SMS Log</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
