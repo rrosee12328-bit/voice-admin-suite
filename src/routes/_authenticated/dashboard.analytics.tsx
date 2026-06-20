@@ -10,9 +10,10 @@ export const Route = createFileRoute("/_authenticated/dashboard/analytics")({
 
 function AnalyticsPage() {
   const me = useMe();
+  const isSuperAdmin = me.profile.role === "super_admin";
   const plan = me.tenant?.plan ?? "phone_starter";
 
-  if (!canUse(plan, "analytics")) {
+  if (!isSuperAdmin && !canUse(plan, "analytics")) {
     return (
       <div className="p-6">
         <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
@@ -27,7 +28,7 @@ function AnalyticsPage() {
   return (
     <DashboardView
       tenantId={me.tenant?.id ?? null}
-      tenantName={`${me.tenant?.name ?? "Workspace"} — Analytics`}
+      tenantName={`${me.tenant?.name ?? "Vektiss"} — Analytics`}
       agentStatus={me.tenant?.agent_status ?? null}
     />
   );
