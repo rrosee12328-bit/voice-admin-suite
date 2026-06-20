@@ -12,6 +12,7 @@ import {
   ClipboardList,
   FileSignature,
   MessageSquare,
+  Mail,
 } from "lucide-react";
 import {
   Sidebar,
@@ -83,6 +84,22 @@ export function AppSidebar() {
                     <BarChart3 />
                     <span>Analytics</span>
                     {!analyticsUnlocked && <Lock className="ml-auto h-3 w-3" />}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/messages")}>
+                  <Link to="/dashboard/messages">
+                    <MessageSquare />
+                    <span>SMS Log</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/emails")}>
+                  <Link to="/dashboard/emails">
+                    <Mail />
+                    <span>Email Log</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
