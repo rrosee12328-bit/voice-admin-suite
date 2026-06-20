@@ -35,7 +35,7 @@ export function AppSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isSuper = me.profile.role === "super_admin";
   const plan = me.tenant?.plan ?? "phone_starter";
-  const analyticsUnlocked = canUse(plan, "analytics");
+  const analyticsUnlocked = isSuper || canUse(plan, "analytics");
 
   const isActive = (to: string) => path === to || path.startsWith(to + "/");
 
