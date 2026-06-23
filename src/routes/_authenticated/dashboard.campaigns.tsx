@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import { useMe } from "@/lib/me";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client-untyped";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -175,10 +175,10 @@ const CALL_STATUS_CONFIG: Record<
 };
 
 function CampaignsPage() {
-  const { me } = useMe();
+  const me = useMe();
   const qc = useQueryClient();
-  const isSuper = me?.role === "super_admin";
-  const tenantId = me?.tenant_id;
+  const isSuper = me.profile.role === "super_admin";
+  const tenantId = me.tenant?.id;
 
   const [showCreate, setShowCreate] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);

@@ -23,19 +23,19 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_authenticated/dashboard.settings'
+import { Route as AuthenticatedDashboardMessagesRouteImport } from './routes/_authenticated/dashboard.messages'
+import { Route as AuthenticatedDashboardEmailsRouteImport } from './routes/_authenticated/dashboard.emails'
+import { Route as AuthenticatedDashboardCampaignsRouteImport } from './routes/_authenticated/dashboard.campaigns'
 import { Route as AuthenticatedDashboardCallsRouteImport } from './routes/_authenticated/dashboard.calls'
 import { Route as AuthenticatedDashboardBillingRouteImport } from './routes/_authenticated/dashboard.billing'
 import { Route as AuthenticatedDashboardAnalyticsRouteImport } from './routes/_authenticated/dashboard.analytics'
 import { Route as AuthenticatedAdminProposalsRouteImport } from './routes/_authenticated/admin.proposals'
+import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin.messages'
 import { Route as AuthenticatedAdminIntakeRouteImport } from './routes/_authenticated/admin.intake'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedDashboardCallsIdRouteImport } from './routes/_authenticated/dashboard.calls.$id'
 import { Route as AuthenticatedAdminIntakeIdRouteImport } from './routes/_authenticated/admin.intake.$id'
 import { Route as AuthenticatedAdminClientsSlugRouteImport } from './routes/_authenticated/admin.clients.$slug'
-import { Route as AuthenticatedDashboardMessagesRouteImport } from './routes/_authenticated/dashboard.messages'
-import { Route as AuthenticatedDashboardEmailsRouteImport } from './routes/_authenticated/dashboard.emails'
-import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin.messages'
-import { Route as AuthenticatedDashboardCampaignsRouteImport } from './routes/_authenticated/dashboard.campaigns'
 
 const SuccessRoute = SuccessRouteImport.update({
   id: '/success',
@@ -108,6 +108,24 @@ const AuthenticatedDashboardSettingsRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
+const AuthenticatedDashboardMessagesRoute =
+  AuthenticatedDashboardMessagesRouteImport.update({
+    id: '/messages',
+    path: '/messages',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardEmailsRoute =
+  AuthenticatedDashboardEmailsRouteImport.update({
+    id: '/emails',
+    path: '/emails',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardCampaignsRoute =
+  AuthenticatedDashboardCampaignsRouteImport.update({
+    id: '/campaigns',
+    path: '/campaigns',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
 const AuthenticatedDashboardCallsRoute =
   AuthenticatedDashboardCallsRouteImport.update({
     id: '/calls',
@@ -130,6 +148,12 @@ const AuthenticatedAdminProposalsRoute =
   AuthenticatedAdminProposalsRouteImport.update({
     id: '/proposals',
     path: '/proposals',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminMessagesRoute =
+  AuthenticatedAdminMessagesRouteImport.update({
+    id: '/messages',
+    path: '/messages',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminIntakeRoute =
@@ -162,30 +186,6 @@ const AuthenticatedAdminClientsSlugRoute =
     path: '/clients/$slug',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const AuthenticatedDashboardMessagesRoute =
-  AuthenticatedDashboardMessagesRouteImport.update({
-    id: '/messages',
-    path: '/messages',
-    getParentRoute: () => AuthenticatedDashboardRoute,
-  } as any)
-const AuthenticatedDashboardEmailsRoute =
-  AuthenticatedDashboardEmailsRouteImport.update({
-    id: '/emails',
-    path: '/emails',
-    getParentRoute: () => AuthenticatedDashboardRoute,
-  } as any)
-const AuthenticatedAdminMessagesRoute =
-  AuthenticatedAdminMessagesRouteImport.update({
-    id: '/messages',
-    path: '/messages',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedDashboardCampaignsRoute =
-  AuthenticatedDashboardCampaignsRouteImport.update({
-    id: '/campaigns',
-    path: '/campaigns',
-    getParentRoute: () => AuthenticatedDashboardRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -200,15 +200,15 @@ export interface FileRoutesByFullPath {
   '/proposal/$slug': typeof ProposalSlugRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
+  '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/proposals': typeof AuthenticatedAdminProposalsRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
-  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
-  '/dashboard/messages': typeof AuthenticatedDashboardMessagesRoute
-  '/dashboard/emails': typeof AuthenticatedDashboardEmailsRoute
-  '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/dashboard/campaigns': typeof AuthenticatedDashboardCampaignsRoute
+  '/dashboard/emails': typeof AuthenticatedDashboardEmailsRoute
+  '/dashboard/messages': typeof AuthenticatedDashboardMessagesRoute
+  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
@@ -226,15 +226,15 @@ export interface FileRoutesByTo {
   '/proposal/$slug': typeof ProposalSlugRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
+  '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/proposals': typeof AuthenticatedAdminProposalsRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
-  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
-  '/dashboard/messages': typeof AuthenticatedDashboardMessagesRoute
-  '/dashboard/emails': typeof AuthenticatedDashboardEmailsRoute
-  '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/dashboard/campaigns': typeof AuthenticatedDashboardCampaignsRoute
+  '/dashboard/emails': typeof AuthenticatedDashboardEmailsRoute
+  '/dashboard/messages': typeof AuthenticatedDashboardMessagesRoute
+  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
@@ -256,15 +256,15 @@ export interface FileRoutesById {
   '/proposal/$slug': typeof ProposalSlugRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
+  '/_authenticated/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/_authenticated/admin/proposals': typeof AuthenticatedAdminProposalsRoute
   '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
   '/_authenticated/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/_authenticated/dashboard/calls': typeof AuthenticatedDashboardCallsRouteWithChildren
-  '/_authenticated/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
-  '/_authenticated/dashboard/messages': typeof AuthenticatedDashboardMessagesRoute
-  '/_authenticated/dashboard/emails': typeof AuthenticatedDashboardEmailsRoute
-  '/_authenticated/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/_authenticated/dashboard/campaigns': typeof AuthenticatedDashboardCampaignsRoute
+  '/_authenticated/dashboard/emails': typeof AuthenticatedDashboardEmailsRoute
+  '/_authenticated/dashboard/messages': typeof AuthenticatedDashboardMessagesRoute
+  '/_authenticated/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/admin/clients/$slug': typeof AuthenticatedAdminClientsSlugRoute
@@ -286,12 +286,15 @@ export interface FileRouteTypes {
     | '/proposal/$slug'
     | '/admin/analytics'
     | '/admin/intake'
+    | '/admin/messages'
     | '/admin/proposals'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/calls'
-    | '/dashboard/settings'
     | '/dashboard/campaigns'
+    | '/dashboard/emails'
+    | '/dashboard/messages'
+    | '/dashboard/settings'
     | '/admin/'
     | '/dashboard/'
     | '/admin/clients/$slug'
@@ -309,15 +312,15 @@ export interface FileRouteTypes {
     | '/proposal/$slug'
     | '/admin/analytics'
     | '/admin/intake'
+    | '/admin/messages'
     | '/admin/proposals'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/calls'
-    | '/dashboard/settings'
-    | '/dashboard/messages'
-    | '/dashboard/emails'
-    | '/admin/messages'
     | '/dashboard/campaigns'
+    | '/dashboard/emails'
+    | '/dashboard/messages'
+    | '/dashboard/settings'
     | '/admin'
     | '/dashboard'
     | '/admin/clients/$slug'
@@ -338,15 +341,15 @@ export interface FileRouteTypes {
     | '/proposal/$slug'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/intake'
+    | '/_authenticated/admin/messages'
     | '/_authenticated/admin/proposals'
     | '/_authenticated/dashboard/analytics'
     | '/_authenticated/dashboard/billing'
     | '/_authenticated/dashboard/calls'
-    | '/_authenticated/dashboard/settings'
-    | '/_authenticated/dashboard/messages'
-    | '/_authenticated/dashboard/emails'
-    | '/_authenticated/admin/messages'
     | '/_authenticated/dashboard/campaigns'
+    | '/_authenticated/dashboard/emails'
+    | '/_authenticated/dashboard/messages'
+    | '/_authenticated/dashboard/settings'
     | '/_authenticated/admin/'
     | '/_authenticated/dashboard/'
     | '/_authenticated/admin/clients/$slug'
@@ -466,6 +469,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardSettingsRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/_authenticated/dashboard/messages': {
+      id: '/_authenticated/dashboard/messages'
+      path: '/messages'
+      fullPath: '/dashboard/messages'
+      preLoaderRoute: typeof AuthenticatedDashboardMessagesRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/emails': {
+      id: '/_authenticated/dashboard/emails'
+      path: '/emails'
+      fullPath: '/dashboard/emails'
+      preLoaderRoute: typeof AuthenticatedDashboardEmailsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/campaigns': {
+      id: '/_authenticated/dashboard/campaigns'
+      path: '/campaigns'
+      fullPath: '/dashboard/campaigns'
+      preLoaderRoute: typeof AuthenticatedDashboardCampaignsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
     '/_authenticated/dashboard/calls': {
       id: '/_authenticated/dashboard/calls'
       path: '/calls'
@@ -492,6 +516,13 @@ declare module '@tanstack/react-router' {
       path: '/proposals'
       fullPath: '/admin/proposals'
       preLoaderRoute: typeof AuthenticatedAdminProposalsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/messages': {
+      id: '/_authenticated/admin/messages'
+      path: '/messages'
+      fullPath: '/admin/messages'
+      preLoaderRoute: typeof AuthenticatedAdminMessagesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/intake': {
@@ -529,34 +560,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminClientsSlugRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/dashboard/messages': {
-      id: '/_authenticated/dashboard/messages'
-      path: '/messages'
-      fullPath: '/dashboard/messages'
-      preLoaderRoute: typeof AuthenticatedDashboardMessagesRouteImport
-      parentRoute: typeof AuthenticatedDashboardRoute
-    }
-    '/_authenticated/dashboard/emails': {
-      id: '/_authenticated/dashboard/emails'
-      path: '/emails'
-      fullPath: '/dashboard/emails'
-      preLoaderRoute: typeof AuthenticatedDashboardEmailsRouteImport
-      parentRoute: typeof AuthenticatedDashboardRoute
-    }
-    '/_authenticated/admin/messages': {
-      id: '/_authenticated/admin/messages'
-      path: '/messages'
-      fullPath: '/admin/messages'
-      preLoaderRoute: typeof AuthenticatedAdminMessagesRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/dashboard/campaigns': {
-      id: '/_authenticated/dashboard/campaigns'
-      path: '/campaigns'
-      fullPath: '/dashboard/campaigns'
-      preLoaderRoute: typeof AuthenticatedDashboardCampaignsRouteImport
-      parentRoute: typeof AuthenticatedDashboardRoute
-    }
   }
 }
 
@@ -577,19 +580,19 @@ const AuthenticatedAdminIntakeRouteWithChildren =
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminIntakeRoute: typeof AuthenticatedAdminIntakeRouteWithChildren
+  AuthenticatedAdminMessagesRoute: typeof AuthenticatedAdminMessagesRoute
   AuthenticatedAdminProposalsRoute: typeof AuthenticatedAdminProposalsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminClientsSlugRoute: typeof AuthenticatedAdminClientsSlugRoute
-  AuthenticatedAdminMessagesRoute: typeof AuthenticatedAdminMessagesRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
   AuthenticatedAdminIntakeRoute: AuthenticatedAdminIntakeRouteWithChildren,
+  AuthenticatedAdminMessagesRoute: AuthenticatedAdminMessagesRoute,
   AuthenticatedAdminProposalsRoute: AuthenticatedAdminProposalsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminClientsSlugRoute: AuthenticatedAdminClientsSlugRoute,
-  AuthenticatedAdminMessagesRoute: AuthenticatedAdminMessagesRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
@@ -613,11 +616,11 @@ interface AuthenticatedDashboardRouteChildren {
   AuthenticatedDashboardAnalyticsRoute: typeof AuthenticatedDashboardAnalyticsRoute
   AuthenticatedDashboardBillingRoute: typeof AuthenticatedDashboardBillingRoute
   AuthenticatedDashboardCallsRoute: typeof AuthenticatedDashboardCallsRouteWithChildren
+  AuthenticatedDashboardCampaignsRoute: typeof AuthenticatedDashboardCampaignsRoute
+  AuthenticatedDashboardEmailsRoute: typeof AuthenticatedDashboardEmailsRoute
+  AuthenticatedDashboardMessagesRoute: typeof AuthenticatedDashboardMessagesRoute
   AuthenticatedDashboardSettingsRoute: typeof AuthenticatedDashboardSettingsRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
-  AuthenticatedDashboardMessagesRoute: typeof AuthenticatedDashboardMessagesRoute
-  AuthenticatedDashboardEmailsRoute: typeof AuthenticatedDashboardEmailsRoute
-  AuthenticatedDashboardCampaignsRoute: typeof AuthenticatedDashboardCampaignsRoute
 }
 
 const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
@@ -626,11 +629,11 @@ const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
     AuthenticatedDashboardBillingRoute: AuthenticatedDashboardBillingRoute,
     AuthenticatedDashboardCallsRoute:
       AuthenticatedDashboardCallsRouteWithChildren,
+    AuthenticatedDashboardCampaignsRoute: AuthenticatedDashboardCampaignsRoute,
+    AuthenticatedDashboardEmailsRoute: AuthenticatedDashboardEmailsRoute,
+    AuthenticatedDashboardMessagesRoute: AuthenticatedDashboardMessagesRoute,
     AuthenticatedDashboardSettingsRoute: AuthenticatedDashboardSettingsRoute,
     AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
-    AuthenticatedDashboardMessagesRoute: AuthenticatedDashboardMessagesRoute,
-    AuthenticatedDashboardEmailsRoute: AuthenticatedDashboardEmailsRoute,
-    AuthenticatedDashboardCampaignsRoute: AuthenticatedDashboardCampaignsRoute,
   }
 
 const AuthenticatedDashboardRouteWithChildren =
@@ -666,13 +669,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
