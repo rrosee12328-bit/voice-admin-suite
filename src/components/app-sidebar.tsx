@@ -13,6 +13,7 @@ import {
   FileSignature,
   MessageSquare,
   Mail,
+  Megaphone,
 } from "lucide-react";
 import {
   Sidebar,
@@ -100,6 +101,14 @@ export function AppSidebar() {
                   <Link to="/dashboard/emails">
                     <Mail />
                     <span>Email Log</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/campaigns")}>
+                  <Link to="/dashboard/campaigns">
+                    <Megaphone />
+                    <span>Campaigns</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
