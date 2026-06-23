@@ -175,10 +175,10 @@ const CALL_STATUS_CONFIG: Record<
 };
 
 function CampaignsPage() {
-  const { me } = useMe();
+  const me = useMe();
   const qc = useQueryClient();
-  const isSuper = me?.role === "super_admin";
-  const tenantId = me?.tenant_id;
+  const isSuper = me.profile.role === "super_admin";
+  const tenantId = me.tenant?.id;
 
   const [showCreate, setShowCreate] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
