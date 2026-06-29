@@ -19,6 +19,8 @@ import { SpotlightCard } from "@/components/spotlight-card";
 import { CountUp } from "@/components/count-up";
 import { cn } from "@/lib/utils";
 
+const secondsToBillableMinutes = (seconds: number) => Math.ceil(seconds / 60);
+
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   head: () => ({
     meta: [
@@ -102,8 +104,8 @@ function PlatformAnalytics() {
     t.seconds += c.duration_seconds ?? 0;
     perTenant[c.tenant_id] = t;
   }
-  const totalMinutes = Math.round(
-    Object.values(perTenant).reduce((s, t) => s + t.seconds, 0) / 60,
+  const totalMinutes = secondsToBillableMinutes(
+    Object.values(perTenant).reduce((s, t) => s + t.seconds, 0),
   );
 
   const planBreakdown = tenants.reduce<Record<string, number>>((acc, t) => {
@@ -113,7 +115,7 @@ function PlatformAnalytics() {
   }, {});
 
   const overLimitCount = tenants.filter((t) => {
-    const used = t.minutes_used_this_month ?? Math.round((perTenant[t.id]?.seconds ?? 0) / 60);
+    const used = secondsToBillableMinutes(perTenant[t.id]?.seconds ?? 0);
     return (t.minutes_included ?? 0) > 0 && used > (t.minutes_included ?? 0);
   }).length;
 
@@ -252,7 +254,7 @@ function PlatformAnalytics() {
                 <tbody>
                   {tenants.map((t) => {
                     const agg = perTenant[t.id] ?? { calls: 0, seconds: 0 };
-                    const minutesUsed = t.minutes_used_this_month ?? Math.round(agg.seconds / 60);
+                    const minutesUsed = secondsToBillableMinutes(agg.seconds);
                     const minutesIncl = t.minutes_included ?? 0;
                     const pct = minutesIncl > 0 ? Math.min(150, (minutesUsed / minutesIncl) * 100) : 0;
                     const over = minutesIncl > 0 && minutesUsed > minutesIncl;

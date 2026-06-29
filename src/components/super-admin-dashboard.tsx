@@ -35,6 +35,8 @@ import { CountUp } from "@/components/count-up";
 import { PlanBadge } from "@/components/badges";
 import { cn } from "@/lib/utils";
 
+const secondsToBillableMinutes = (seconds: number) => Math.ceil(seconds / 60);
+
 export function SuperAdminDashboard() {
   const queryClient = useQueryClient();
   const monthStartISO = startOfMonth(new Date()).toISOString();
@@ -123,8 +125,8 @@ export function SuperAdminDashboard() {
   const pct = (a: number, b: number) => (b === 0 ? (a > 0 ? 100 : 0) : ((a - b) / b) * 100);
 
   const totalCallsMonth = thisMonth.length;
-  const totalMinutesMonth = Math.round(
-    thisMonth.reduce((s, c) => s + (c.duration_seconds ?? 0), 0) / 60,
+  const totalMinutesMonth = secondsToBillableMinutes(
+    thisMonth.reduce((s, c) => s + (c.duration_seconds ?? 0), 0),
   );
   const avgDurationSec = thisMonth.length
     ? Math.round(thisMonth.reduce((s, c) => s + (c.duration_seconds ?? 0), 0) / thisMonth.length)
@@ -158,7 +160,7 @@ export function SuperAdminDashboard() {
     days.push({
       date: format(d, "MMM d"),
       calls: dayCalls.length,
-      minutes: Math.round(dayCalls.reduce((s, c) => s + (c.duration_seconds ?? 0), 0) / 60),
+      minutes: secondsToBillableMinutes(dayCalls.reduce((s, c) => s + (c.duration_seconds ?? 0), 0)),
     });
   }
 
@@ -181,7 +183,7 @@ export function SuperAdminDashboard() {
   const attention = tenants
     .map((t) => {
       const agg = perTenant[t.id] ?? { calls: 0, seconds: 0 };
-      const minutesUsed = t.minutes_used_this_month ?? Math.round(agg.seconds / 60);
+      const minutesUsed = secondsToBillableMinutes(agg.seconds);
       const minutesIncl = t.minutes_included ?? 0;
       const over = minutesIncl > 0 && minutesUsed > minutesIncl;
       const paused = !["live", "active"].includes((t.agent_status ?? "").toLowerCase());
@@ -453,7 +455,7 @@ export function SuperAdminDashboard() {
           ) : (
             <ul className="divide-y divide-border/60">
               {topTenants.map((row, idx) => {
-                const minutes = Math.round(row.seconds / 60);
+                const minutes = secondsToBillableMinutes(row.seconds);
                 const widthPct = (row.calls / maxTopCalls) * 100;
                 return (
                   <li key={row.tenant.id} className="group/row relative px-5 py-3 transition-colors hover:bg-muted/40">

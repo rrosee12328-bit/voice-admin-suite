@@ -19,7 +19,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { subDays, format, startOfDay } from "date-fns";
+import { subDays, format, startOfDay, startOfMonth } from "date-fns";
 import { useMe } from "@/lib/me";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Call } from "@/integrations/supabase/app-types";
@@ -76,7 +76,7 @@ export function DashboardView({
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
-      const since = subDays(new Date(), 21).toISOString();
+      const since = startOfMonth(new Date()).toISOString();
       let q = supabase
         .from("calls")
         .select("*")
@@ -117,11 +117,13 @@ export function DashboardView({
   const now = new Date();
   const weekAgo = subDays(now, 7);
   const twoWeeksAgo = subDays(now, 14);
+  const monthStart = startOfMonth(now);
 
   const thisWeek = calls.filter((c) => new Date(c.created_at) >= weekAgo);
   const lastWeek = calls.filter(
     (c) => new Date(c.created_at) >= twoWeeksAgo && new Date(c.created_at) < weekAgo,
   );
+  const thisMonth = calls.filter((c) => new Date(c.created_at) >= monthStart);
 
   const pct = (a: number, b: number) => (b === 0 ? (a > 0 ? 100 : 0) : ((a - b) / b) * 100);
 
@@ -134,6 +136,10 @@ export function DashboardView({
   const newPatientsLast = lastWeek.filter((c) => c.is_new_patient).length;
   const bookedLast = lastWeek.filter((c) => c.appointment_booked).length;
   const transferredLast = lastWeek.filter((c) => c.transferred).length;
+  const liveMinutesUsed = Math.ceil(
+    thisMonth.reduce((s, c) => s + (c.duration_seconds ?? 0), 0) / 60,
+  );
+  const displayMinutesUsed = isLoading ? minutesUsed : liveMinutesUsed;
 
   // 14-day daily volume
   const days: { date: string; calls: number; booked: number }[] = [];
@@ -255,7 +261,7 @@ export function DashboardView({
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         <div className="lg:col-span-1">
           <UsageWidget
-            minutesUsed={minutesUsed}
+            minutesUsed={displayMinutesUsed}
             minutesIncluded={minutesIncluded}
             plan={plan}
           />
