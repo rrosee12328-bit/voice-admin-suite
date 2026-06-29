@@ -244,7 +244,7 @@ function CallsPage() {
                   <th className="px-3 py-2 text-left font-medium">Reason</th>
                   <th className="px-3 py-2 text-left font-medium">Outcome</th>
                   <th className="px-3 py-2 text-left font-medium">Tags</th>
-                  <th className="px-3 py-2 text-left font-medium">Transcript</th>
+                  <th className="px-3 py-2 text-left font-medium">Summary</th>
                   {canUse(plan, "lead_score") && <th className="px-3 py-2 text-left font-medium">Lead</th>}
                   <th className="px-3 py-2 text-left font-medium">Status</th>
                   <th className="px-3 py-2 text-left font-medium">Notes</th>
@@ -253,8 +253,9 @@ function CallsPage() {
               </thead>
               <tbody>
                 {filtered.map((c) => {
-                  const preview = c.transcript
-                    ? c.transcript.slice(0, 100) + (c.transcript.length > 100 ? "…" : "")
+                  const summaryPreview = c.call_summary || c.transcript;
+                  const preview = summaryPreview
+                    ? summaryPreview.slice(0, 120) + (summaryPreview.length > 120 ? "…" : "")
                     : "";
                   return (
                     <tr key={c.id} className="border-b border-border/60 hover:bg-muted/20">
@@ -281,7 +282,7 @@ function CallsPage() {
                             to="/dashboard/calls/$id"
                             params={{ id: c.id }}
                             className="block truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
-                            title={c.transcript ?? ""}
+                            title={summaryPreview ?? ""}
                           >
                             {preview}
                           </Link>

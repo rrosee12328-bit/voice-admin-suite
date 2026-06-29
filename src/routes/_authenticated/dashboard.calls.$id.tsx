@@ -209,6 +209,13 @@ function CallDetailPage() {
             </div>
           )}
 
+          {call.call_summary && (
+            <div className="rounded-lg border border-border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold">Call Summary</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">{call.call_summary}</p>
+            </div>
+          )}
+
           <div className="rounded-lg border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold">Full Transcript</h2>

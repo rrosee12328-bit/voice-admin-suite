@@ -192,6 +192,9 @@ function buildCallPatch(event: string, call: JsonObject, tenantId: string | null
   const analysis = asObject(call.call_analysis);
   const custom = asObject(analysis.custom_analysis_data);
   const direction = asString(call.direction);
+  const callStatus = firstString(call.call_status, event);
+  const outcome = firstString(custom.outcome, custom.call_outcome) ||
+    (callStatus === "ended" ? "completed" : callStatus);
 
   const callerPhone = direction === "outbound"
     ? firstString(call.to_number, metadata.caller_phone, dynamic.caller_phone)
@@ -212,7 +215,8 @@ function buildCallPatch(event: string, call: JsonObject, tenantId: string | null
     caller_phone: callerPhone,
     caller_email: firstString(custom.caller_email, custom.email, dynamic.caller_email, dynamic.email, metadata.caller_email, metadata.email),
     call_reason: firstString(custom.call_reason, custom.reason, custom.intent, dynamic.call_reason, dynamic.reason, metadata.call_reason),
-    outcome: firstString(custom.outcome, custom.call_outcome, custom.call_summary, analysis.call_summary, call.disconnection_reason, call.call_status, event),
+    outcome,
+    call_summary: firstString(custom.call_summary, analysis.call_summary),
     is_new_patient: asBoolean(custom.is_new_patient ?? custom.new_patient ?? dynamic.is_new_patient ?? metadata.is_new_patient),
     appointment_booked: asBoolean(custom.appointment_booked ?? custom.appointment_scheduled ?? custom.booked ?? dynamic.appointment_booked),
     transferred: event.startsWith("transfer_") || asBoolean(custom.transferred ?? dynamic.transferred) || false,

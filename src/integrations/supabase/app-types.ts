@@ -41,6 +41,7 @@ export type Call = {
   caller_email: string | null;
   call_reason: string | null;
   outcome: string | null;
+  call_summary: string | null;
   appointment_booked: boolean | null;
   is_new_patient: boolean | null;
   transferred: boolean | null;
