@@ -15,21 +15,39 @@ const PLAN_LABELS: Record<string, string> = {
   ai_front_office: "AI Front Office",
 };
 
-// The app's users sign in against the Vektiss Voice backend (same project as
-// src/integrations/supabase/client.ts). Token validation MUST happen against
-// that same project — validating against any other project always fails.
-const VEKTISS_URL = "https://hygmztvpmmyxuomjwrbt.supabase.co";
-const VEKTISS_ANON_KEY =
+const VEKTISS_SUPABASE_PROJECT_ID = "hygmztvpmmyxuomjwrbt";
+const VEKTISS_SUPABASE_URL = `https://${VEKTISS_SUPABASE_PROJECT_ID}.supabase.co`;
+const VEKTISS_SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
+
+function productionSupabaseEnv() {
+  const configuredUrl = process.env.VEKTISS_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const configuredAnonKey =
+    process.env.VEKTISS_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    "";
+  const matchesProduction = configuredUrl.includes(VEKTISS_SUPABASE_PROJECT_ID);
+
+  return {
+    baseUrl: matchesProduction && configuredUrl ? configuredUrl : VEKTISS_SUPABASE_URL,
+    anonKey: matchesProduction && configuredAnonKey ? configuredAnonKey : VEKTISS_SUPABASE_ANON_KEY,
+  };
+}
+
+function vektissEnv() {
+  return productionSupabaseEnv();
+}
 
 export const sendInviteEmail = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    const baseUrl = process.env.VEKTISS_SUPABASE_URL || VEKTISS_URL;
-    const anonKey = process.env.VEKTISS_SUPABASE_ANON_KEY || VEKTISS_ANON_KEY;
+    const { baseUrl, anonKey } = vektissEnv();
+    if (!baseUrl) throw new Error("SUPABASE_URL is not configured");
+    if (!anonKey) throw new Error("SUPABASE_PUBLISHABLE_KEY is not configured");
 
-    // Verify the caller's identity against the SAME auth backend that issued
-    // the token (the Vektiss Voice project), via a direct Auth API call.
+    // Verify the caller's identity against the same auth backend that issued
+    // the token. Validating against any other project will fail.
     const userRes = await fetch(`${baseUrl}/auth/v1/user`, {
       headers: {
         apikey: anonKey,

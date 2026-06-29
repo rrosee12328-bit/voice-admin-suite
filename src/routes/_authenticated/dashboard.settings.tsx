@@ -7,6 +7,8 @@ import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
 import { PlanBadge, StatusDot } from "@/components/badges";
 import { Button } from "@/components/ui/button";
 import { EmailConnections } from "@/components/email-connections";
+import { supabase } from "@/integrations/supabase/client-untyped";
+import { SUPABASE_FUNCTIONS_URL, requireSupabasePublishableKey } from "@/integrations/supabase/config";
 
 export const Route = createFileRoute("/_authenticated/dashboard/settings")({
   component: SettingsPage,
@@ -25,14 +27,22 @@ function SettingsPage() {
     }
     setIsLoadingPortal(true);
     try {
-      const res = await fetch(
-        "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/customer-portal",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tenant_id: tenantId }),
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) {
+        toast.error("Your session has expired. Please sign in again.");
+        return;
+      }
+
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/customer-portal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: requireSupabasePublishableKey(),
         },
-      );
+        body: JSON.stringify({ tenant_id: tenantId }),
+      });
       if (!res.ok) {
         const text = await res.text().catch(() => "Unknown error");
         throw new Error(text);

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Mail,
   RefreshCw,
@@ -69,6 +69,7 @@ function EmailsPage() {
   const me = useMe();
   const isSuperAdmin = me.profile.role === "super_admin";
   const tenantId = me.tenant?.id ?? null;
+  const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -81,7 +82,33 @@ function EmailsPage() {
     queryKey: ["email-messages", isSuperAdmin ? "all" : tenantId],
     queryFn: () => listEmailMessages(isSuperAdmin ? null : tenantId),
     enabled: isSuperAdmin || !!tenantId,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
+
+  useEffect(() => {
+    if (!isSuperAdmin && !tenantId) return;
+
+    const channel = supabase
+      .channel(`email-messages:${isSuperAdmin ? "all" : tenantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "email_messages",
+          ...(isSuperAdmin ? {} : { filter: `tenant_id=eq.${tenantId}` }),
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["email-messages"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [isSuperAdmin, queryClient, tenantId]);
 
   const { data: tenants = [] } = useQuery({
     queryKey: ["tenants-list"],

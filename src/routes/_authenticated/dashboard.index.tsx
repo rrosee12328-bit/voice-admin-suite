@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   Phone,
   UserPlus,
@@ -68,9 +69,12 @@ export function DashboardView({
   plan?: string | null;
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-calls", tenantId],
     enabled: !!tenantId,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const since = subDays(new Date(), 21).toISOString();
       let q = supabase
@@ -84,6 +88,30 @@ export function DashboardView({
       return data ?? [];
     },
   });
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel(`dashboard-calls:${tenantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "calls",
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["dashboard-calls", tenantId] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient, tenantId]);
 
   const calls = data ?? [];
   const now = new Date();

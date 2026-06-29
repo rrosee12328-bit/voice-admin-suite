@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/dashboard/calls/$id")({
   component: CallDetailPage,
 });
 
-const STATUSES = ["new", "in_progress", "resolved", "needs_follow_up", "archived"];
+const STATUSES = ["needs_follow_up", "in_progress", "resolved"];
 
 function CallDetailPage() {
   const { id } = Route.useParams();

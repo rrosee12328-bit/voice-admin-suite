@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
+import { SUPABASE_FUNCTIONS_URL, requireSupabasePublishableKey } from "@/integrations/supabase/config";
 import type { Invoice, MonthlyUsage } from "@/integrations/supabase/app-types";
 import { useMe } from "@/lib/me";
 import { PLAN_LABEL, PLAN_PRICE } from "@/lib/plan-gating";
@@ -25,8 +26,6 @@ import { EmptyState } from "@/components/empty-state";
 export const Route = createFileRoute("/_authenticated/dashboard/billing")({
   component: BillingPage,
 });
-
-const VEKTISS_FN = "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1";
 
 function UsageBar({ used, included }: { used: number; included: number }) {
   const pct = included > 0 ? Math.min(100, Math.round((used / included) * 100)) : 0;
@@ -160,14 +159,12 @@ function BillingPage() {
         toast.error("Your session has expired. Please sign in again.");
         return;
       }
-      const VEKTISS_ANON =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
-      const res = await fetch(`${VEKTISS_FN}/customer-portal`, {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/customer-portal`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          apikey: VEKTISS_ANON,
+          apikey: requireSupabasePublishableKey(),
         },
         body: JSON.stringify({ tenant_id: tenantId }),
       });

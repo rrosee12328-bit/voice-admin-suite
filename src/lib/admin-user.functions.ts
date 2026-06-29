@@ -1,20 +1,32 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const VEKTISS_URL = "https://hygmztvpmmyxuomjwrbt.supabase.co";
-const VEKTISS_ANON_KEY =
+const VEKTISS_SUPABASE_PROJECT_ID = "hygmztvpmmyxuomjwrbt";
+const VEKTISS_SUPABASE_URL = `https://${VEKTISS_SUPABASE_PROJECT_ID}.supabase.co`;
+const VEKTISS_SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
 
 function vektissEnv() {
+  const configuredUrl = process.env.VEKTISS_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const configuredAnonKey =
+    process.env.VEKTISS_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    "";
+  const matchesProduction = configuredUrl.includes(VEKTISS_SUPABASE_PROJECT_ID);
+
   return {
-    baseUrl: process.env.VEKTISS_SUPABASE_URL || VEKTISS_URL,
-    anonKey: process.env.VEKTISS_SUPABASE_ANON_KEY || VEKTISS_ANON_KEY,
-    serviceKey: process.env.VEKTISS_SUPABASE_SERVICE_ROLE_KEY || "",
+    baseUrl: matchesProduction && configuredUrl ? configuredUrl : VEKTISS_SUPABASE_URL,
+    anonKey: matchesProduction && configuredAnonKey ? configuredAnonKey : VEKTISS_SUPABASE_ANON_KEY,
+    serviceKey: process.env.VEKTISS_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "",
   };
 }
 
 async function requireSuperAdmin(accessToken: string) {
   const { baseUrl, anonKey } = vektissEnv();
+  if (!baseUrl) throw new Error("SUPABASE_URL is not configured");
+  if (!anonKey) throw new Error("SUPABASE_PUBLISHABLE_KEY is not configured");
+
   const userRes = await fetch(`${baseUrl}/auth/v1/user`, {
     headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` },
   });

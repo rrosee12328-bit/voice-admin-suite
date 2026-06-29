@@ -2,6 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client-untyped";
+import { SUPABASE_FUNCTIONS_URL } from "@/integrations/supabase/config";
 import { INTAKE_SECTIONS, type Question } from "@/lib/intake-questions";
 import { FORECLOSURE_INTAKE_SECTIONS } from "@/lib/intake-questions-foreclosure";
 import { VEKTISS_LEAD_SECTIONS } from "@/lib/intake-questions-vektiss-lead";
@@ -39,8 +40,7 @@ const PLAN_FEATURES: Record<Plan, { minutes: string; bullets: string[] }> = {
   custom: { minutes: "Custom volume", bullets: ["Tailored to your practice"] },
 };
 
-const VEKTISS_CHECKOUT =
-  "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1/create-checkout-test";
+const VEKTISS_CHECKOUT = `${SUPABASE_FUNCTIONS_URL}/create-checkout-test`;
 
 export const Route = createFileRoute("/intake/$token")({
   head: () => ({

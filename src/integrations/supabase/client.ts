@@ -1,14 +1,9 @@
-// Points to the existing "Vektiss Voice Project" Supabase backend.
-// Anon key is publishable (RLS-protected) — safe to ship in the bundle.
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
-
-const SUPABASE_URL = 'https://hygmztvpmmyxuomjwrbt.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E';
+import { SUPABASE_URL, requireSupabasePublishableKey } from './config';
 
 function createSupabaseClient() {
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  return createClient<Database>(SUPABASE_URL, requireSupabasePublishableKey(), {
     auth: {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
@@ -27,4 +22,3 @@ export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>,
     return Reflect.get(_supabase, prop, receiver);
   },
 });
-

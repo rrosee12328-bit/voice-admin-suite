@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/empty-state";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { SUPABASE_FUNCTIONS_URL, requireSupabasePublishableKey } from "@/integrations/supabase/config";
 import {
   sendClientPasswordReset,
   updateClientEmail,
@@ -26,10 +27,6 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/clients/$slug")({
   component: AdminClientView,
 });
-
-const VEKTISS_FN = "https://hygmztvpmmyxuomjwrbt.supabase.co/functions/v1";
-const VEKTISS_ANON =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
 
 type IntakeContact = {
   id: string;
@@ -646,12 +643,12 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
         toast.error("Your session has expired. Please sign in again.");
         return;
       }
-      const res = await fetch(`${VEKTISS_FN}/customer-portal`, {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/customer-portal`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          apikey: VEKTISS_ANON,
+          apikey: requireSupabasePublishableKey(),
         },
         body: JSON.stringify({ tenant_id: tenantId }),
       });

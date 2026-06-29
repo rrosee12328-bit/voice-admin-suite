@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import {
   Phone,
   Users,
@@ -35,11 +36,14 @@ import { PlanBadge } from "@/components/badges";
 import { cn } from "@/lib/utils";
 
 export function SuperAdminDashboard() {
+  const queryClient = useQueryClient();
   const monthStartISO = startOfMonth(new Date()).toISOString();
   const since30 = subDays(new Date(), 30).toISOString();
 
   const tenantsQ = useQuery({
     queryKey: ["sa-tenants"],
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase.from("tenants").select("*");
       if (error) throw error;
@@ -49,6 +53,8 @@ export function SuperAdminDashboard() {
 
   const callsQ = useQuery({
     queryKey: ["sa-calls-30d"],
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("calls")
@@ -71,6 +77,30 @@ export function SuperAdminDashboard() {
       >;
     },
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("super-admin-dashboard")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "calls" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["sa-calls-30d"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tenants" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const tenants = tenantsQ.data ?? [];
   const calls = callsQ.data ?? [];

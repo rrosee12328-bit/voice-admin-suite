@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Play, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/dashboard/calls")({
   component: CallsRoute,
 });
 
-const STATUSES = ["new", "in_progress", "resolved", "needs_follow_up", "archived"];
+const STATUSES = ["needs_follow_up", "in_progress", "resolved"];
 
 function FlagBadges({ call }: { call: Call }) {
   const items: { label: string; cls: string; show: boolean }[] = [
@@ -97,6 +97,8 @@ function CallsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["calls-log", isSuperAdmin ? "all" : tenantId],
     enabled: isSuperAdmin || !!tenantId,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       let q = supabase
         .from("calls")
@@ -109,6 +111,30 @@ function CallsPage() {
       return data ?? [];
     },
   });
+
+  useEffect(() => {
+    if (!isSuperAdmin && !tenantId) return;
+
+    const channel = supabase
+      .channel(`calls-log:${isSuperAdmin ? "all" : tenantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "calls",
+          ...(isSuperAdmin ? {} : { filter: `tenant_id=eq.${tenantId}` }),
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["calls-log"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [isSuperAdmin, queryClient, tenantId]);
 
   const calls = data ?? [];
 
