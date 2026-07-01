@@ -791,6 +791,7 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
               icon={<BarChart3 className="h-8 w-8" />}
             />
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
@@ -807,6 +808,7 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </section>

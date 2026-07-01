@@ -224,6 +224,7 @@ function AdminHome() {
             action={<Button onClick={() => setOpen(true)}><Plus className="mr-1 h-4 w-4" /> Add client</Button>}
           />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
@@ -263,6 +264,7 @@ function AdminHome() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
