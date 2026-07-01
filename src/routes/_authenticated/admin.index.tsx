@@ -224,6 +224,7 @@ function AdminHome() {
             action={<Button onClick={() => setOpen(true)}><Plus className="mr-1 h-4 w-4" /> Add client</Button>}
           />
         ) : (
+          <>
           <div className="grid gap-3 p-3 md:hidden">
             {tenants.map((t) => {
               const last = lastCallByTenant.data?.[t.id];
@@ -300,6 +301,7 @@ function AdminHome() {
             </tbody>
           </table>
           </div>
+          </>
         )}
       </div>
     </div>
