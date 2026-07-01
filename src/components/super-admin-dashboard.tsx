@@ -221,7 +221,7 @@ export function SuperAdminDashboard() {
   ];
 
   return (
-    <div className="relative flex flex-col gap-6 p-6">
+    <div className="relative flex min-w-0 max-w-full flex-col gap-4 overflow-x-hidden p-4 sm:gap-6 sm:p-6">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 opacity-[0.3]"
@@ -233,8 +233,8 @@ export function SuperAdminDashboard() {
         }}
       />
 
-      <header className="flex items-end justify-between">
-        <div>
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:justify-between">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-success pulse-dot" />
             Operator Console
@@ -356,12 +356,12 @@ export function SuperAdminDashboard() {
       <section className="grid grid-cols-12 gap-4">
         {/* Volume chart */}
         <SpotlightCard className="col-span-12 lg:col-span-8" radius={420}>
-          <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+          <div className="grid grid-cols-1 gap-3 border-b border-border/60 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-5">
             <div>
               <h2 className="text-sm font-semibold">Platform call volume · 14 days</h2>
               <p className="text-xs text-muted-foreground">Aggregate across every workspace</p>
             </div>
-            <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" /> Calls</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-success" /> Minutes</span>
             </div>
@@ -438,7 +438,7 @@ export function SuperAdminDashboard() {
       {/* TOP TENANTS + ATTENTION */}
       <section className="grid grid-cols-12 gap-4">
         <SpotlightCard className="col-span-12 lg:col-span-7" radius={360}>
-          <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border/60 px-4 py-4 sm:px-5">
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-warning" />
               <div>
@@ -446,7 +446,7 @@ export function SuperAdminDashboard() {
                 <p className="text-xs text-muted-foreground">This month</p>
               </div>
             </div>
-            <Link to="/admin" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+            <Link to="/admin" className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
               All clients <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
@@ -465,7 +465,7 @@ export function SuperAdminDashboard() {
                       style={{ width: `${widthPct}%` }}
                     />
                     <div className="relative flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex min-w-0 items-center gap-3">
                         <span className={cn(
                           "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
                           idx === 0 ? "bg-warning/20 text-warning" :
@@ -476,7 +476,7 @@ export function SuperAdminDashboard() {
                         </span>
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium">{row.tenant.name}</div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             <PlanBadge plan={row.tenant.plan} />
                             <span className="tabular-nums">{minutes.toLocaleString()} min</span>
                           </div>
