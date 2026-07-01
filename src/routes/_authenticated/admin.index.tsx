@@ -117,13 +117,13 @@ function AdminHome() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <header className="flex items-start justify-between">
-        <div>
+    <div className="flex min-w-0 max-w-full flex-col gap-4 p-4 sm:gap-6 sm:p-6">
+      <header className="grid grid-cols-1 gap-3 sm:flex sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Platform</h1>
           <p className="text-sm text-muted-foreground">Manage all client workspaces</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center">
           <InviteClientDialog triggerLabel="Invite client" />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -224,7 +224,43 @@ function AdminHome() {
             action={<Button onClick={() => setOpen(true)}><Plus className="mr-1 h-4 w-4" /> Add client</Button>}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="grid gap-3 p-3 lg:hidden">
+            {tenants.map((t) => {
+              const last = lastCallByTenant.data?.[t.id];
+              return (
+                <article key={t.id} className="rounded-lg border border-border bg-background p-4">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{t.name}</p>
+                      <p className="mt-1 font-mono text-xs text-muted-foreground">{t.client_number || "—"}</p>
+                    </div>
+                    <PlanBadge plan={t.plan} />
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                    <div className="min-w-0">
+                      <p className="text-muted-foreground">Agent</p>
+                      <div className="mt-1"><StatusDot status={t.agent_status} /></div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-muted-foreground">Last call</p>
+                      <p className="mt-1 truncate">{last ? formatDistanceToNow(new Date(last), { addSuffix: true }) : "No calls yet"}</p>
+                    </div>
+                    <div className="col-span-2 min-w-0">
+                      <p className="text-muted-foreground">Phone</p>
+                      <p className="mt-1 truncate tabular-nums">{t.retell_phone_number || "—"}</p>
+                    </div>
+                  </div>
+                  <Button asChild variant="outline" className="mt-4 w-full">
+                    <Link to="/admin/clients/$slug" params={{ slug: t.slug }}>
+                      Open workspace
+                    </Link>
+                  </Button>
+                </article>
+              );
+            })}
+          </div>
+          <div className="hidden overflow-x-auto lg:block">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
@@ -265,6 +301,7 @@ function AdminHome() {
             </tbody>
           </table>
           </div>
+          </>
         )}
       </div>
     </div>
