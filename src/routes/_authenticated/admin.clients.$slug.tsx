@@ -777,7 +777,7 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-base font-semibold">Monthly Usage History</h2>
         </div>
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card">
           {monthlyUsageQ.isLoading ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -791,6 +791,7 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
               icon={<BarChart3 className="h-8 w-8" />}
             />
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
@@ -807,6 +808,7 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </section>
@@ -818,7 +820,7 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
             <Receipt className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-base font-semibold">Invoices</h2>
           </div>
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
