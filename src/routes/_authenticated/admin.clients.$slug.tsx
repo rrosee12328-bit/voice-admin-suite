@@ -153,21 +153,21 @@ function AdminClientView() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/10 px-6 py-2.5">
-        <div className="flex items-center gap-2 text-xs">
+    <div className="min-w-0 max-w-full overflow-x-hidden">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-primary/30 bg-primary/10 px-4 py-2.5 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2 text-xs">
           <Eye className="h-3.5 w-3.5 text-primary" />
           <span className="text-muted-foreground">Admin viewing:</span>
-          <span className="font-semibold">{tenant.name}</span>
+          <span className="truncate font-semibold">{tenant.name}</span>
         </div>
-        <Link to="/admin" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+        <Link to="/admin" className="inline-flex shrink-0 items-center gap-1 text-xs text-primary hover:underline">
           <ArrowLeft className="h-3 w-3" /> Back to all clients
         </Link>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <div className="border-b border-border bg-card px-6">
-          <TabsList className="h-10 bg-transparent">
+        <div className="overflow-x-auto border-b border-border bg-card px-4 sm:px-6">
+          <TabsList className="h-10 min-w-max bg-transparent">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
@@ -222,7 +222,7 @@ function ClientSettingsView({
   const plan = tenant.plan ?? "phone_starter";
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex min-w-0 max-w-full flex-col gap-6 p-4 sm:p-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="text-sm text-muted-foreground">Client workspace details and plan</p>
