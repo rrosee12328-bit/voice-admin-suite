@@ -477,7 +477,7 @@ function PrimaryAccountSection({
             placeholder="client@example.com"
             className="flex-1"
           />
-          <Button variant="outline" onClick={handleSaveEmail} disabled={!emailDirty || saveEmailLoading}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={handleSaveEmail} disabled={!emailDirty || saveEmailLoading}>
             {saveEmailLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save email
           </Button>
@@ -500,7 +500,7 @@ function PrimaryAccountSection({
             placeholder="+15551234567"
             className="flex-1"
           />
-          <Button variant="outline" onClick={handleSavePhone} disabled={!phoneDirty || savePhoneLoading}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={handleSavePhone} disabled={!phoneDirty || savePhoneLoading}>
             {savePhoneLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save phone
           </Button>
@@ -510,8 +510,8 @@ function PrimaryAccountSection({
         </p>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border pt-4">
-        <Button onClick={handleSendReset} disabled={resetLoading || !authEmail}>
+      <div className="mt-5 grid grid-cols-1 items-center gap-3 border-t border-border pt-4 sm:flex sm:flex-wrap">
+        <Button className="w-full sm:w-auto" onClick={handleSendReset} disabled={resetLoading || !authEmail}>
           {resetLoading ? (
             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
           ) : (
@@ -708,14 +708,14 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
   const isOverLimit = minutesUsed > minutesIncluded && minutesIncluded > 0;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <header className="flex items-start justify-between">
-        <div>
+    <div className="flex min-w-0 max-w-full flex-col gap-6 p-4 sm:p-6">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
           <p className="text-sm text-muted-foreground">Client plan, usage, and monthly records</p>
         </div>
         {clientNumber && (
-          <div className="rounded-lg border border-border bg-card px-4 py-2 text-right">
+          <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-2 text-right">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Client #</div>
             <div className="font-mono text-sm font-semibold tabular-nums">{clientNumber}</div>
           </div>
@@ -723,8 +723,8 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
       </header>
 
       <section className="rounded-lg border border-border bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+        <div className="grid grid-cols-1 items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
+          <div className="min-w-0">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Current plan</div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-xl font-semibold">{PLAN_LABEL[plan] ?? plan}</span>
@@ -738,7 +738,7 @@ function ClientBillingView({ tenant }: { tenant: Tenant }) {
               </div>
             )}
           </div>
-          <Button onClick={handleManageBilling} disabled={portalLoading}>
+          <Button className="w-full sm:w-auto" onClick={handleManageBilling} disabled={portalLoading}>
             {portalLoading ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Opening…</>
             ) : (
