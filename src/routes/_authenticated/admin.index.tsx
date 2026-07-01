@@ -225,7 +225,7 @@ function AdminHome() {
           />
         ) : (
           <>
-          <div className="grid gap-3 p-3 md:hidden">
+          <div className="grid gap-3 p-3 lg:hidden">
             {tenants.map((t) => {
               const last = lastCallByTenant.data?.[t.id];
               return (
@@ -260,7 +260,7 @@ function AdminHome() {
               );
             })}
           </div>
-          <div className="hidden overflow-x-auto md:block">
+          <div className="hidden overflow-x-auto lg:block">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
