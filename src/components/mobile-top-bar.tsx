@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PLAN_LABEL } from "@/lib/plan-gating";
 
 /**
- * Sticky top bar shown only on mobile (md:hidden).
+ * Sticky top bar shown on mobile/tablet (lg:hidden).
  * Contains the hamburger trigger that opens the sidebar Sheet drawer,
  * the logo, and a compact user avatar.
  *
@@ -23,7 +23,7 @@ export function MobileTopBar() {
   if (!isMobile) return null;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
       {/* Hamburger — calls toggleSidebar() which opens the Sheet drawer */}
       <SidebarTrigger className="h-9 w-9 shrink-0" />
 
