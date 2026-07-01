@@ -157,7 +157,7 @@ function AdminClientView() {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-primary/30 bg-primary/10 px-4 py-2.5 sm:px-6">
         <div className="flex min-w-0 items-center gap-2 text-xs">
           <Eye className="h-3.5 w-3.5 text-primary" />
-          <span className="text-muted-foreground">Admin viewing:</span>
+          <span className="hidden text-muted-foreground min-[380px]:inline">Admin viewing:</span>
           <span className="truncate font-semibold">{tenant.name}</span>
         </div>
         <Link to="/admin" className="inline-flex shrink-0 items-center gap-1 text-xs text-primary hover:underline">
