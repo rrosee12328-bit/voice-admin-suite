@@ -7,6 +7,13 @@ const SERVICE_ROLE_KEY =
   Deno.env.get("VEKTISS_SUPABASE_SERVICE_ROLE_KEY") ||
   "";
 const RETELL_API_KEY = Deno.env.get("RETELL_API_KEY") || "";
+const RETELL_API_KEYS = [
+  RETELL_API_KEY,
+  ...((Deno.env.get("RETELL_API_KEYS") || "")
+    .split(/[\n,]/)
+    .map((key) => key.trim())
+    .filter(Boolean)),
+].filter((key, index, keys) => key && keys.indexOf(key) === index);
 const RETELL_WEBHOOK_TOKEN = Deno.env.get("RETELL_WEBHOOK_TOKEN") || "";
 const DEFAULT_TENANT_ID = Deno.env.get("DEFAULT_TENANT_ID") || "";
 
@@ -109,10 +116,10 @@ async function verifyRequest(req: Request, rawBody: string) {
     const url = new URL(req.url);
     const parts = url.pathname.split("/").filter(Boolean);
     const token = url.searchParams.get("token") || parts[parts.length - 1] || "";
-    return constantTimeEqual(token, RETELL_WEBHOOK_TOKEN);
+    if (constantTimeEqual(token, RETELL_WEBHOOK_TOKEN)) return true;
   }
 
-  if (!RETELL_API_KEY) return true;
+  if (RETELL_API_KEYS.length === 0) return !RETELL_WEBHOOK_TOKEN;
   const signature = req.headers.get("x-retell-signature");
   if (!signature) return false;
 
@@ -124,8 +131,12 @@ async function verifyRequest(req: Request, rawBody: string) {
     return false;
   }
 
-  const expected = await hmacHex(RETELL_API_KEY, rawBody + match[1]);
-  return constantTimeEqual(expected, match[2].toLowerCase());
+  const provided = match[2].toLowerCase();
+  for (const apiKey of RETELL_API_KEYS) {
+    const expected = await hmacHex(apiKey, rawBody + match[1]);
+    if (constantTimeEqual(expected, provided)) return true;
+  }
+  return false;
 }
 
 async function rest<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
