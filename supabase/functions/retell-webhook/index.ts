@@ -19,6 +19,7 @@ const DEFAULT_TENANT_ID = Deno.env.get("DEFAULT_TENANT_ID") || "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const FROM_EMAIL = Deno.env.get("RESEND_FROM") || "Vektiss Voice <noreply@vektiss.com>";
 const DASHBOARD_URL = (Deno.env.get("DASHBOARD_URL") || Deno.env.get("SITE_URL") || "https://voice.vektiss.com").replace(/\/$/, "");
+const VEKTISS_LOGO_URL = Deno.env.get("VEKTISS_LOGO_URL") || `${DASHBOARD_URL}/assets/vektiss-logo-BH23kWUx.png`;
 
 const jsonHeaders = { "content-type": "application/json" };
 
@@ -406,12 +407,23 @@ function formatDuration(seconds: number | null) {
   return minutes ? `${minutes}m ${remaining}s` : `${remaining}s`;
 }
 
+function detailRow(label: string, value: string | null) {
+  if (!value) return "";
+  return `
+    <tr>
+      <td style="padding:10px 0;color:#64748b;font-size:13px;border-bottom:1px solid #e5e7eb;">${escapeHtml(label)}</td>
+      <td style="padding:10px 0;color:#0f172a;font-size:13px;font-weight:700;text-align:right;border-bottom:1px solid #e5e7eb;">${escapeHtml(value)}</td>
+    </tr>
+  `;
+}
+
 function buildNotificationEmail(tenantName: string, call: StoredCall) {
   const caller = call.caller_name || call.caller_phone || "Unknown caller";
   const subject = `New ${tenantName} call: ${caller}`;
   const callUrl = `${DASHBOARD_URL}/dashboard/calls/${call.id}`;
   const summary = call.call_summary || "No call summary is available yet.";
   const transcriptPreview = call.transcript ? call.transcript.slice(0, 1200) : "";
+  const duration = formatDuration(call.duration_seconds);
 
   const text = [
     `New call for ${tenantName}`,
@@ -434,21 +446,87 @@ function buildNotificationEmail(tenantName: string, call: StoredCall) {
   ].filter(Boolean).join("\n");
 
   const html = `
-    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
-      <h2 style="margin:0 0 12px">New call for ${escapeHtml(tenantName)}</h2>
-      <p><strong>Caller:</strong> ${escapeHtml(caller)}</p>
-      <p><strong>Phone:</strong> ${escapeHtml(call.caller_phone || "Unknown")}</p>
-      ${call.caller_email ? `<p><strong>Email:</strong> ${escapeHtml(call.caller_email)}</p>` : ""}
-      <p><strong>Duration:</strong> ${escapeHtml(formatDuration(call.duration_seconds))}</p>
-      ${call.outcome ? `<p><strong>Outcome:</strong> ${escapeHtml(call.outcome)}</p>` : ""}
-      ${call.call_reason ? `<p><strong>Reason:</strong> ${escapeHtml(call.call_reason)}</p>` : ""}
-      <h3 style="margin:18px 0 8px">Summary</h3>
-      <p>${escapeHtml(summary)}</p>
-      ${transcriptPreview ? `<h3 style="margin:18px 0 8px">Transcript Preview</h3><pre style="white-space:pre-wrap;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px">${escapeHtml(transcriptPreview)}</pre>` : ""}
-      <p style="margin-top:18px"><a href="${escapeHtml(callUrl)}">Open this call in the dashboard</a></p>
-      ${call.recording_url ? `<p><a href="${escapeHtml(call.recording_url)}">Listen to the recording</a></p>` : ""}
-    </div>
-  `;
+<!doctype html>
+<html>
+  <body style="margin:0;background:#f1f5f9;padding:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbeafe;box-shadow:0 18px 45px rgba(15,23,42,0.08);">
+            <tr>
+              <td style="background:#1f85ff;padding:26px 30px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td>
+                      <div style="display:inline-block;background:#ffffff;border-radius:12px;padding:9px 12px;">
+                        <img src="${escapeHtml(VEKTISS_LOGO_URL)}" alt="Vektiss" height="30" style="display:block;height:30px;width:auto;max-width:170px;border:0;outline:none;text-decoration:none;" />
+                      </div>
+                    </td>
+                    <td align="right" style="color:#dbeafe;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">
+                      Call Notification
+                    </td>
+                  </tr>
+                </table>
+                <h1 style="margin:28px 0 6px;color:#ffffff;font-size:26px;line-height:1.2;font-weight:800;">New call received</h1>
+                <p style="margin:0;color:#dbeafe;font-size:15px;line-height:1.5;">${escapeHtml(tenantName)} received a call from ${escapeHtml(caller)}.</p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 30px 10px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                  ${detailRow("Caller", caller)}
+                  ${detailRow("Phone", call.caller_phone || "Unknown")}
+                  ${detailRow("Email", call.caller_email)}
+                  ${detailRow("Duration", duration)}
+                  ${detailRow("Outcome", call.outcome)}
+                  ${detailRow("Reason", call.call_reason)}
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:18px 30px 0;">
+                <div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:14px;padding:18px;">
+                  <p style="margin:0 0 8px;color:#1d4ed8;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;">AI Summary</p>
+                  <p style="margin:0;color:#0f172a;font-size:15px;line-height:1.6;">${escapeHtml(summary)}</p>
+                </div>
+              </td>
+            </tr>
+
+            ${transcriptPreview ? `
+              <tr>
+                <td style="padding:18px 30px 0;">
+                  <p style="margin:0 0 8px;color:#334155;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;">Transcript Preview</p>
+                  <div style="white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;color:#334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.55;">${escapeHtml(transcriptPreview)}</div>
+                </td>
+              </tr>
+            ` : ""}
+
+            <tr>
+              <td style="padding:26px 30px 30px;">
+                <table role="presentation" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="border-radius:10px;background:#1f85ff;">
+                      <a href="${escapeHtml(callUrl)}" style="display:inline-block;padding:13px 18px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;">Open in Dashboard</a>
+                    </td>
+                    ${call.recording_url ? `
+                      <td width="12"></td>
+                      <td style="border-radius:10px;background:#e0f2fe;">
+                        <a href="${escapeHtml(call.recording_url)}" style="display:inline-block;padding:13px 18px;color:#0369a1;text-decoration:none;font-size:14px;font-weight:800;">Listen to Recording</a>
+                      </td>
+                    ` : ""}
+                  </tr>
+                </table>
+                <p style="margin:18px 0 0;color:#64748b;font-size:12px;line-height:1.5;">You are receiving this because your email is listed as a Vektiss Voice admin or workspace contact.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`.trim();
 
   return { subject, text, html };
 }
