@@ -16,6 +16,9 @@ const RETELL_API_KEYS = [
 ].filter((key, index, keys) => key && keys.indexOf(key) === index);
 const RETELL_WEBHOOK_TOKEN = Deno.env.get("RETELL_WEBHOOK_TOKEN") || "";
 const DEFAULT_TENANT_ID = Deno.env.get("DEFAULT_TENANT_ID") || "";
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
+const FROM_EMAIL = Deno.env.get("RESEND_FROM") || "Vektiss Voice <noreply@vektiss.com>";
+const DASHBOARD_URL = (Deno.env.get("DASHBOARD_URL") || Deno.env.get("SITE_URL") || "https://voice.vektiss.com").replace(/\/$/, "");
 
 const jsonHeaders = { "content-type": "application/json" };
 
@@ -151,6 +154,70 @@ async function rest<T = unknown>(path: string, init: RequestInit = {}): Promise<
   return text ? JSON.parse(text) as T : null as T;
 }
 
+async function sendEmail(payload: {
+  to: string;
+  toName?: string | null;
+  tenantId?: string | null;
+  callId?: string | null;
+  subject: string;
+  html: string;
+  text: string;
+  callReason?: string | null;
+  outcome?: string | null;
+}) {
+  if (!RESEND_API_KEY) {
+    console.warn("Skipping call notification email: missing RESEND_API_KEY");
+    return;
+  }
+
+  const resendRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${RESEND_API_KEY}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+    }),
+  });
+
+  const body = await resendRes.text();
+  let resendId: string | null = null;
+  try {
+    const parsed = body ? JSON.parse(body) as JsonObject : {};
+    resendId = asString(parsed.id);
+  } catch {
+    // Keep the raw body for the email log below.
+  }
+
+  await rest("email_messages", {
+    method: "POST",
+    headers: { prefer: "return=minimal" },
+    body: JSON.stringify({
+      tenant_id: payload.tenantId || null,
+      call_id: payload.callId || null,
+      to_email: payload.to,
+      to_name: payload.toName || null,
+      from_email: FROM_EMAIL,
+      subject: payload.subject,
+      body_html: payload.html,
+      body_text: payload.text,
+      email_type: "custom",
+      status: resendRes.ok ? "sent" : "failed",
+      resend_id: resendId,
+      call_reason: payload.callReason || null,
+      outcome: payload.outcome || null,
+      error_message: resendRes.ok ? null : body.slice(0, 500),
+    }),
+  });
+
+  if (!resendRes.ok) throw new Error(`Resend ${resendRes.status}: ${body.slice(0, 500)}`);
+}
+
 async function findTenant(call: JsonObject) {
   const metadata = asObject(call.metadata);
   const dynamic = asObject(call.retell_llm_dynamic_variables);
@@ -181,6 +248,14 @@ async function findTenant(call: JsonObject) {
     (tenant.retell_phone_numbers || []).some((phone) => phonesMatch(phone, toNumber) || phonesMatch(phone, fromNumber))
   );
   return byPhone?.id || null;
+}
+
+async function getTenantName(tenantId: string | null) {
+  if (!tenantId) return "Unknown workspace";
+  const rows = await rest<Array<{ name: string | null }>>(
+    `tenants?select=name&id=eq.${encodeURIComponent(tenantId)}&limit=1`,
+  );
+  return rows[0]?.name || "Unknown workspace";
 }
 
 function durationSeconds(call: JsonObject) {
@@ -240,6 +315,22 @@ function buildCallPatch(event: string, call: JsonObject, tenantId: string | null
   };
 }
 
+type StoredCall = {
+  id: string;
+  tenant_id: string | null;
+  caller_name: string | null;
+  caller_phone: string | null;
+  caller_email: string | null;
+  call_reason: string | null;
+  outcome: string | null;
+  call_summary: string | null;
+  duration_seconds: number | null;
+  recording_url: string | null;
+  transcript: string | null;
+  retell_call_id: string | null;
+  created_at: string;
+};
+
 async function upsertCall(event: string, call: JsonObject, tenantId: string | null) {
   const retellCallId = asString(call.call_id);
   if (!retellCallId) return null;
@@ -250,18 +341,149 @@ async function upsertCall(event: string, call: JsonObject, tenantId: string | nu
 
   if (existing[0]?.id) {
     const id = encodeURIComponent(existing[0].id);
-    return rest(`calls?id=eq.${id}`, {
+    const rows = await rest<StoredCall[]>(`calls?id=eq.${id}`, {
       method: "PATCH",
       headers: { prefer: "return=representation" },
       body: JSON.stringify(patch),
     });
+    return rows[0] || null;
   }
 
-  return rest("calls", {
+  const rows = await rest<StoredCall[]>("calls", {
     method: "POST",
     headers: { prefer: "return=representation" },
     body: JSON.stringify({ ...patch, retell_call_id: retellCallId }),
   });
+  return rows[0] || null;
+}
+
+function isCallNotificationReady(event: string, call: JsonObject, storedCall: StoredCall | null) {
+  if (!storedCall?.id) return false;
+  if (event === "call_started") return false;
+
+  const status = firstString(call.call_status, event)?.toLowerCase() || "";
+  const hasCallContent = !!(storedCall.call_summary || storedCall.transcript || storedCall.recording_url);
+  return event.toLowerCase().includes("analy") || status === "ended" || status === "completed" || hasCallContent;
+}
+
+async function getNotificationRecipients(tenantId: string | null) {
+  const recipients = new Map<string, { email: string; name: string | null }>();
+  const addProfiles = (profiles: Array<{ email: string | null; name: string | null }>) => {
+    for (const profile of profiles) {
+      const email = asString(profile.email)?.toLowerCase();
+      if (email && !recipients.has(email)) recipients.set(email, { email, name: profile.name || null });
+    }
+  };
+
+  const superAdmins = await rest<Array<{ email: string | null; name: string | null }>>(
+    "profiles?select=email,name&role=eq.super_admin",
+  );
+  addProfiles(superAdmins);
+
+  if (tenantId) {
+    const clientProfiles = await rest<Array<{ email: string | null; name: string | null }>>(
+      `profiles?select=email,name&tenant_id=eq.${encodeURIComponent(tenantId)}`,
+    );
+    addProfiles(clientProfiles);
+  }
+
+  return Array.from(recipients.values());
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatDuration(seconds: number | null) {
+  if (!seconds || seconds < 1) return "Unknown";
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  return minutes ? `${minutes}m ${remaining}s` : `${remaining}s`;
+}
+
+function buildNotificationEmail(tenantName: string, call: StoredCall) {
+  const caller = call.caller_name || call.caller_phone || "Unknown caller";
+  const subject = `New ${tenantName} call: ${caller}`;
+  const callUrl = `${DASHBOARD_URL}/dashboard/calls/${call.id}`;
+  const summary = call.call_summary || "No call summary is available yet.";
+  const transcriptPreview = call.transcript ? call.transcript.slice(0, 1200) : "";
+
+  const text = [
+    `New call for ${tenantName}`,
+    "",
+    `Caller: ${caller}`,
+    call.caller_phone ? `Phone: ${call.caller_phone}` : null,
+    call.caller_email ? `Email: ${call.caller_email}` : null,
+    `Duration: ${formatDuration(call.duration_seconds)}`,
+    call.outcome ? `Outcome: ${call.outcome}` : null,
+    call.call_reason ? `Reason: ${call.call_reason}` : null,
+    "",
+    "Summary:",
+    summary,
+    transcriptPreview ? "" : null,
+    transcriptPreview ? "Transcript preview:" : null,
+    transcriptPreview || null,
+    "",
+    `Open in dashboard: ${callUrl}`,
+    call.recording_url ? `Recording: ${call.recording_url}` : null,
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+      <h2 style="margin:0 0 12px">New call for ${escapeHtml(tenantName)}</h2>
+      <p><strong>Caller:</strong> ${escapeHtml(caller)}</p>
+      <p><strong>Phone:</strong> ${escapeHtml(call.caller_phone || "Unknown")}</p>
+      ${call.caller_email ? `<p><strong>Email:</strong> ${escapeHtml(call.caller_email)}</p>` : ""}
+      <p><strong>Duration:</strong> ${escapeHtml(formatDuration(call.duration_seconds))}</p>
+      ${call.outcome ? `<p><strong>Outcome:</strong> ${escapeHtml(call.outcome)}</p>` : ""}
+      ${call.call_reason ? `<p><strong>Reason:</strong> ${escapeHtml(call.call_reason)}</p>` : ""}
+      <h3 style="margin:18px 0 8px">Summary</h3>
+      <p>${escapeHtml(summary)}</p>
+      ${transcriptPreview ? `<h3 style="margin:18px 0 8px">Transcript Preview</h3><pre style="white-space:pre-wrap;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px">${escapeHtml(transcriptPreview)}</pre>` : ""}
+      <p style="margin-top:18px"><a href="${escapeHtml(callUrl)}">Open this call in the dashboard</a></p>
+      ${call.recording_url ? `<p><a href="${escapeHtml(call.recording_url)}">Listen to the recording</a></p>` : ""}
+    </div>
+  `;
+
+  return { subject, text, html };
+}
+
+async function notifyCallComplete(event: string, callPayload: JsonObject, storedCall: StoredCall | null) {
+  if (!isCallNotificationReady(event, callPayload, storedCall)) return;
+
+  const tenantId = storedCall.tenant_id;
+  const tenantName = await getTenantName(tenantId);
+  const recipients = await getNotificationRecipients(tenantId);
+  if (recipients.length === 0) return;
+
+  const email = buildNotificationEmail(tenantName, storedCall);
+  for (const recipient of recipients) {
+    const existing = await rest<Array<{ id: string }>>(
+      `email_messages?select=id&call_id=eq.${encodeURIComponent(storedCall.id)}&to_email=eq.${encodeURIComponent(recipient.email)}&limit=1`,
+    );
+    if (existing[0]?.id) continue;
+
+    try {
+      await sendEmail({
+        to: recipient.email,
+        toName: recipient.name,
+        tenantId,
+        callId: storedCall.id,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        callReason: storedCall.call_reason,
+        outcome: storedCall.outcome,
+      });
+    } catch (error) {
+      console.error("Call notification email failed", error);
+    }
+  }
 }
 
 Deno.serve(async (req) => {
@@ -282,7 +504,8 @@ Deno.serve(async (req) => {
     }
 
     const tenantId = await findTenant(call);
-    await upsertCall(event, call, tenantId);
+    const storedCall = await upsertCall(event, call, tenantId);
+    await notifyCallComplete(event, call, storedCall);
 
     return response(204);
   } catch (error) {
