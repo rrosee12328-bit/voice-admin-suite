@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
   Trophy,
   ShieldCheck,
+  Database,
 } from "lucide-react";
 import { subDays, startOfDay, startOfMonth, format } from "date-fns";
 import {
@@ -62,6 +63,20 @@ type TenantIntegrationHealth = {
     | "email_failures"
     | "live_no_calls"
     | string;
+};
+
+type TenantExternalConnectionHealth = {
+  tenant_id: string;
+  tenant_name: string;
+  slug: string | null;
+  provider: string;
+  is_connected: boolean;
+  status: string;
+  last_synced_at: string | null;
+  campaign_count: number;
+  contact_count: number;
+  pending_contact_count: number;
+  health_status: string;
 };
 
 const healthLabel: Record<string, string> = {
@@ -136,6 +151,21 @@ export function SuperAdminDashboard() {
     },
   });
 
+  const externalConnectionsQ = useQuery({
+    queryKey: ["tenant-external-connection-health"],
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenant_external_connection_health")
+        .select("*")
+        .order("health_status", { ascending: true })
+        .order("tenant_name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as TenantExternalConnectionHealth[];
+    },
+  });
+
   useEffect(() => {
     const channel = supabase
       .channel("super-admin-dashboard")
@@ -153,6 +183,7 @@ export function SuperAdminDashboard() {
         () => {
           queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
           queryClient.invalidateQueries({ queryKey: ["tenant-integration-health"] });
+          queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health"] });
         },
       )
       .on(
@@ -169,6 +200,27 @@ export function SuperAdminDashboard() {
           queryClient.invalidateQueries({ queryKey: ["tenant-integration-health"] });
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tenant_integrations" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "campaigns" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "campaign_contacts" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health"] });
+        },
+      )
       .subscribe();
 
     return () => {
@@ -179,6 +231,7 @@ export function SuperAdminDashboard() {
   const tenants = tenantsQ.data ?? [];
   const calls = callsQ.data ?? [];
   const integrationHealth = integrationHealthQ.data ?? [];
+  const externalConnections = externalConnectionsQ.data ?? [];
   const integrationIssues = integrationHealth
     .filter((row) => row.health_status !== "healthy")
     .sort((a, b) => {
@@ -193,6 +246,8 @@ export function SuperAdminDashboard() {
         a.tenant_name.localeCompare(b.tenant_name);
     });
   const isLoading = tenantsQ.isLoading || callsQ.isLoading;
+  const tekmetricConnected = externalConnections.filter((row) => row.is_connected).length;
+  const tekmetricIssues = externalConnections.filter((row) => row.is_connected && row.health_status !== "healthy").length;
 
   const tenantById: Record<string, Tenant> = {};
   for (const t of tenants) tenantById[t.id] = t;
@@ -530,6 +585,112 @@ export function SuperAdminDashboard() {
                             className="inline-flex rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
                           >
                             Open
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SpotlightCard>
+      </section>
+
+      <section className="grid grid-cols-12 gap-4">
+        <SpotlightCard className="col-span-12" radius={420}>
+          <div className="grid grid-cols-1 gap-3 border-b border-border/60 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-5">
+            <div className="flex items-center gap-2">
+              <Database className={cn(
+                "h-4 w-4",
+                tekmetricIssues ? "text-warning" : tekmetricConnected ? "text-success" : "text-muted-foreground",
+              )} />
+              <div>
+                <h2 className="text-sm font-semibold">Tekmetric connections</h2>
+                <p className="text-xs text-muted-foreground">
+                  Source status, sync timing, and campaign contacts visible to client workspaces
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex rounded-md border border-border bg-muted/40 px-2 py-1 font-medium">
+                {tekmetricConnected} connected
+              </span>
+              <span className={cn(
+                "inline-flex rounded-md border px-2 py-1 font-medium",
+                tekmetricIssues
+                  ? "border-warning/30 bg-warning/15 text-warning"
+                  : "border-success/30 bg-success/15 text-success",
+              )}>
+                {tekmetricIssues} issue{tekmetricIssues === 1 ? "" : "s"}
+              </span>
+            </div>
+          </div>
+
+          {externalConnectionsQ.isLoading ? (
+            <div className="grid gap-2 p-5 sm:grid-cols-3">
+              <div className="h-16 animate-pulse rounded bg-muted" />
+              <div className="h-16 animate-pulse rounded bg-muted" />
+              <div className="h-16 animate-pulse rounded bg-muted" />
+            </div>
+          ) : externalConnectionsQ.error ? (
+            <div className="p-5 text-sm text-destructive">
+              Tekmetric connection view is not available yet. Apply the Supabase migration, then refresh this dashboard.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead className="border-b border-border/60 bg-muted/30 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <tr>
+                    <th className="px-5 py-3 text-left font-semibold">Workspace</th>
+                    <th className="px-5 py-3 text-left font-semibold">Status</th>
+                    <th className="px-5 py-3 text-left font-semibold">Last pull</th>
+                    <th className="px-5 py-3 text-left font-semibold">Contacts</th>
+                    <th className="px-5 py-3 text-left font-semibold">Campaigns</th>
+                    <th className="px-5 py-3 text-right font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {externalConnections.map((row) => (
+                    <tr key={row.tenant_id} className="transition-colors hover:bg-muted/30">
+                      <td className="px-5 py-3">
+                        <div className="font-medium">{row.tenant_name}</div>
+                        <div className="text-xs text-muted-foreground">{row.slug ?? row.tenant_id.slice(0, 8)}</div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={cn(
+                          "inline-flex rounded-md border px-2 py-1 text-xs font-medium capitalize",
+                          !row.is_connected
+                            ? "border-border bg-muted/40 text-muted-foreground"
+                            : row.health_status === "healthy"
+                              ? "border-success/30 bg-success/15 text-success"
+                              : "border-warning/30 bg-warning/15 text-warning",
+                        )}>
+                          {!row.is_connected
+                            ? "Not connected"
+                            : row.health_status === "healthy"
+                              ? "Connected"
+                              : row.health_status.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-muted-foreground">
+                        {row.last_synced_at ? formatShortDate(row.last_synced_at) : "Never"}
+                      </td>
+                      <td className="px-5 py-3 tabular-nums text-muted-foreground">
+                        {row.contact_count.toLocaleString()}
+                        <span className="ml-1 text-xs">({row.pending_contact_count.toLocaleString()} pending)</span>
+                      </td>
+                      <td className="px-5 py-3 tabular-nums text-muted-foreground">
+                        {row.campaign_count.toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        {row.slug && (
+                          <Link
+                            to="/admin/clients/$slug"
+                            params={{ slug: row.slug }}
+                            className="inline-flex rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            Open integrations
                           </Link>
                         )}
                       </td>

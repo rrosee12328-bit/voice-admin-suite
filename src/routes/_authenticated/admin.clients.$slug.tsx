@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { ArrowLeft, BarChart3, Eye, ExternalLink, Loader2, Mail, Receipt, Phone, Clock, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, BarChart3, Eye, ExternalLink, Loader2, Mail, Receipt, Phone, Clock, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Database, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Tenant, Profile, Invoice, MonthlyUsage } from "@/integrations/supabase/app-types";
@@ -42,6 +42,36 @@ type AccountAuth = {
   emailConfirmedAt: string | null;
   phoneConfirmedAt: string | null;
   lastSignInAt: string | null;
+};
+
+type TenantExternalConnectionHealth = {
+  tenant_id: string;
+  tenant_name: string;
+  slug: string | null;
+  provider: string;
+  is_connected: boolean;
+  status: string;
+  environment_url: string | null;
+  settings: Record<string, unknown> | null;
+  last_synced_at: string | null;
+  integration_updated_at: string | null;
+  last_campaign_at: string | null;
+  last_campaign_name: string | null;
+  campaign_count: number;
+  contact_count: number;
+  pending_contact_count: number;
+  last_contact_imported_at: string | null;
+  health_status: string;
+};
+
+type TekmetricPreviewContact = {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  email?: string;
+  last_service_date?: string;
+  vehicle_info?: string;
+  due_reason?: string;
 };
 
 function normalizeClientName(value: string | null | undefined) {
@@ -169,6 +199,7 @@ function AdminClientView() {
         <div className="overflow-x-auto border-b border-border bg-card px-4 sm:px-6">
           <TabsList className="h-10 min-w-max bg-transparent">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
@@ -183,6 +214,10 @@ function AdminClientView() {
             minutesIncluded={tenant.minutes_included}
             plan={tenant.plan}
           />
+        </TabsContent>
+
+        <TabsContent value="integrations" className="mt-0">
+          <ClientIntegrationsView tenant={tenant} />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-0">
@@ -202,6 +237,291 @@ function AdminClientView() {
           <ClientBillingView tenant={tenant} />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function ClientIntegrationsView({ tenant }: { tenant: Tenant }) {
+  const queryClient = useQueryClient();
+  const [monthsSinceService, setMonthsSinceService] = useState(3);
+  const [previewContacts, setPreviewContacts] = useState<TekmetricPreviewContact[]>([]);
+  const [previewMeta, setPreviewMeta] = useState<{ cutoffDate?: string; count?: number } | null>(null);
+
+  const connectionQ = useQuery({
+    queryKey: ["tenant-external-connection-health", tenant.id],
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenant_external_connection_health")
+        .select("*")
+        .eq("tenant_id", tenant.id)
+        .eq("provider", "tekmetric")
+        .maybeSingle();
+      if (error) throw error;
+      return data as TenantExternalConnectionHealth | null;
+    },
+  });
+
+  const campaignsQ = useQuery({
+    queryKey: ["admin-tekmetric-campaigns", tenant.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("id,name,status,total_contacts,calls_made,calls_answered,appointments_booked,source_synced_at,created_at")
+        .eq("tenant_id", tenant.id)
+        .eq("source", "tekmetric")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        name: string;
+        status: string;
+        total_contacts: number;
+        calls_made: number;
+        calls_answered: number;
+        appointments_booked: number;
+        source_synced_at: string | null;
+        created_at: string;
+      }>;
+    },
+  });
+
+  const contactsQ = useQuery({
+    queryKey: ["admin-tekmetric-contacts", tenant.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaign_contacts")
+        .select("id,first_name,last_name,phone,last_service_date,vehicle_info,call_status,due_reason,created_at")
+        .eq("tenant_id", tenant.id)
+        .eq("external_source", "tekmetric")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return (data ?? []) as Array<TekmetricPreviewContact & {
+        id: string;
+        call_status: string;
+        created_at: string;
+      }>;
+    },
+  });
+
+  const runSyncCheck = async () => {
+    const { data, error } = await supabase.functions.invoke("tekmetric-sync", {
+      body: {
+        action: "preview_due_customers",
+        tenant_id: tenant.id,
+        months_since_service: monthsSinceService,
+        limit: 25,
+      },
+    });
+    if (error) throw error;
+    const contacts = (data?.contacts ?? []) as TekmetricPreviewContact[];
+    setPreviewContacts(contacts);
+    setPreviewMeta({ cutoffDate: data?.cutoff_date, count: data?.count });
+    return contacts.length;
+  };
+
+  const syncMutation = useMutation({
+    mutationFn: runSyncCheck,
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health", tenant.id] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health"] });
+      toast.success(`Tekmetric sync check found ${count} due contact${count === 1 ? "" : "s"}.`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const connection = connectionQ.data;
+  const connected = !!connection?.is_connected;
+  const healthy = connection?.health_status === "healthy";
+  const stale = connection?.health_status === "stale" || connection?.health_status === "connected_never_synced";
+  const statusClass = healthy
+    ? "border-success/30 bg-success/15 text-success"
+    : connected && stale
+      ? "border-warning/30 bg-warning/15 text-warning"
+      : connected
+        ? "border-destructive/30 bg-destructive/15 text-destructive"
+        : "border-border bg-muted/50 text-muted-foreground";
+  const statusLabel = !connected
+    ? "Not connected"
+    : healthy
+      ? "Connected"
+      : stale
+        ? "Needs sync"
+        : (connection?.status ?? "Issue").replace(/_/g, " ");
+
+  return (
+    <div className="flex min-w-0 max-w-full flex-col gap-6 p-4 sm:p-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
+        <p className="text-sm text-muted-foreground">Super-admin view of what this client workspace can pull and see.</p>
+      </header>
+
+      <section className="rounded-lg border border-border bg-card p-5">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Database className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">Tekmetric</h2>
+              <span className={`inline-flex rounded-md border px-2 py-1 text-xs font-medium capitalize ${statusClass}`}>
+                {statusLabel}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This shows whether the workspace has a Tekmetric source, when it last pulled, and how many contacts the client dashboard can use in campaigns.
+            </p>
+          </div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:flex sm:items-end">
+            <div className="min-w-0">
+              <Label htmlFor="tekmetric-sync-months" className="text-xs text-muted-foreground">Months since service</Label>
+              <Input
+                id="tekmetric-sync-months"
+                type="number"
+                min={1}
+                max={36}
+                value={monthsSinceService}
+                onChange={(event) => setMonthsSinceService(Math.max(1, Math.min(36, Number(event.target.value) || 3)))}
+                className="mt-1 w-full sm:w-40"
+              />
+            </div>
+            <Button
+              className="self-end"
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+            >
+              {syncMutation.isPending ? (
+                <><RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Checking…</>
+              ) : (
+                <><RefreshCw className="mr-2 h-4 w-4" /> Run sync check</>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <dl className="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <ConnectionStat label="Last pull" value={connection?.last_synced_at ? formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true }) : "Never"} />
+          <ConnectionStat label="Imported contacts" value={(connection?.contact_count ?? 0).toLocaleString()} />
+          <ConnectionStat label="Pending campaign contacts" value={(connection?.pending_contact_count ?? 0).toLocaleString()} />
+          <ConnectionStat label="Tekmetric campaigns" value={(connection?.campaign_count ?? 0).toLocaleString()} />
+        </dl>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+          <div className="rounded-lg border border-border bg-background p-4">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Environment</p>
+            <p className="mt-1 break-all font-mono text-xs">{connection?.environment_url || "Not set"}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-background p-4">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Last campaign source</p>
+            <p className="mt-1 text-sm font-medium">{connection?.last_campaign_name || "No Tekmetric campaign yet"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {connection?.last_campaign_at ? format(new Date(connection.last_campaign_at), "MMM d, yyyy h:mm a") : "Create a campaign after importing contacts to populate this."}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {previewMeta && (
+        <section className="rounded-lg border border-border bg-card">
+          <div className="border-b border-border px-5 py-4">
+            <h2 className="text-sm font-semibold">Latest sync check preview</h2>
+            <p className="text-xs text-muted-foreground">
+              {previewMeta.count ?? previewContacts.length} contacts due since {previewMeta.cutoffDate ?? "the selected cutoff"}.
+            </p>
+          </div>
+          {previewContacts.length === 0 ? (
+            <div className="p-5 text-sm text-muted-foreground">Tekmetric responded, but no due contacts matched this window.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium">Customer</th>
+                    <th className="px-4 py-2 text-left font-medium">Phone</th>
+                    <th className="px-4 py-2 text-left font-medium">Last service</th>
+                    <th className="px-4 py-2 text-left font-medium">Vehicle</th>
+                    <th className="px-4 py-2 text-left font-medium">Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewContacts.slice(0, 10).map((contact, index) => (
+                    <tr key={`${contact.phone ?? "contact"}-${index}`} className="border-b border-border/60">
+                      <td className="px-4 py-3 font-medium">{[contact.first_name, contact.last_name].filter(Boolean).join(" ") || "—"}</td>
+                      <td className="px-4 py-3 tabular-nums text-muted-foreground">{contact.phone || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{contact.last_service_date || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{contact.vehicle_info || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{contact.due_reason || "Tekmetric customer"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      <section className="rounded-lg border border-border bg-card">
+        <div className="border-b border-border px-5 py-4">
+          <h2 className="text-sm font-semibold">What the client dashboard can see</h2>
+          <p className="text-xs text-muted-foreground">Recent Tekmetric-sourced campaigns and imported contacts for this workspace.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 p-5 xl:grid-cols-2">
+          <div className="min-w-0">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Campaigns</h3>
+            {campaignsQ.isLoading ? (
+              <div className="h-24 animate-pulse rounded bg-muted" />
+            ) : (campaignsQ.data ?? []).length === 0 ? (
+              <p className="rounded-lg border border-border bg-background p-4 text-sm text-muted-foreground">No Tekmetric campaigns created yet.</p>
+            ) : (
+              <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+                {(campaignsQ.data ?? []).map((campaign) => (
+                  <div key={campaign.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 bg-background p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{campaign.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {campaign.total_contacts ?? 0} contacts · {campaign.calls_made ?? 0} calls made · {campaign.appointments_booked ?? 0} booked
+                      </p>
+                    </div>
+                    <span className="rounded-md bg-muted px-2 py-1 text-xs capitalize">{campaign.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Imported contacts</h3>
+            {contactsQ.isLoading ? (
+              <div className="h-24 animate-pulse rounded bg-muted" />
+            ) : (contactsQ.data ?? []).length === 0 ? (
+              <p className="rounded-lg border border-border bg-background p-4 text-sm text-muted-foreground">No Tekmetric contacts imported into campaigns yet.</p>
+            ) : (
+              <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+                {(contactsQ.data ?? []).map((contact) => (
+                  <div key={contact.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 bg-background p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{[contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.phone || "Contact"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {contact.last_service_date || "No service date"} · {contact.due_reason || "Tekmetric customer"}
+                      </p>
+                    </div>
+                    <span className="rounded-md bg-muted px-2 py-1 text-xs capitalize">{contact.call_status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ConnectionStat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-border bg-background p-4">
+      <dt className="text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-lg font-semibold tabular-nums">{value}</dd>
     </div>
   );
 }

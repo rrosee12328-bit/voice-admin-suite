@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Users, DollarSign, Phone } from "lucide-react";
+import { Plus, Users, DollarSign, Phone, Database } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
@@ -80,7 +80,23 @@ function AdminHome() {
     },
   });
 
+  const externalConnectionsQ = useQuery({
+    queryKey: ["tenant-external-connection-health"],
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenant_external_connection_health")
+        .select("*");
+      if (error) throw error;
+      return (data ?? []) as TenantExternalConnectionHealth[];
+    },
+  });
+
   const tenants = tenantsQ.data ?? [];
+  const externalConnectionByTenant = Object.fromEntries(
+    (externalConnectionsQ.data ?? []).map((row) => [row.tenant_id, row]),
+  );
   const activeClients = tenants.length;
   const mrr = tenants.reduce((sum, t) => sum + (PLAN_PRICE[t.plan] || 0), 0);
 
@@ -250,6 +266,12 @@ function AdminHome() {
                       <p className="text-muted-foreground">Phone</p>
                       <p className="mt-1 truncate tabular-nums">{t.retell_phone_number || "—"}</p>
                     </div>
+                    <div className="col-span-2 min-w-0">
+                      <p className="text-muted-foreground">Tekmetric</p>
+                      <div className="mt-1">
+                        <TekmetricConnectionBadge connection={externalConnectionByTenant[t.id]} />
+                      </div>
+                    </div>
                   </div>
                   <Button asChild variant="outline" className="mt-4 w-full">
                     <Link to="/admin/clients/$slug" params={{ slug: t.slug }}>
@@ -270,12 +292,14 @@ function AdminHome() {
                 <th className="px-4 py-2 text-left font-medium">Agent</th>
                 <th className="px-4 py-2 text-left font-medium">Phone</th>
                 <th className="px-4 py-2 text-left font-medium">Last call</th>
+                <th className="px-4 py-2 text-left font-medium">Tekmetric</th>
                 <th className="px-4 py-2 text-right font-medium"></th>
               </tr>
             </thead>
             <tbody>
               {tenants.map((t) => {
                 const last = lastCallByTenant.data?.[t.id];
+                const tekmetric = externalConnectionByTenant[t.id];
                 return (
                   <tr key={t.id} className="border-b border-border/60 hover:bg-muted/20">
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{t.client_number || "—"}</td>
@@ -285,6 +309,9 @@ function AdminHome() {
                     <td className="px-4 py-3 tabular-nums text-muted-foreground">{t.retell_phone_number || "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {last ? formatDistanceToNow(new Date(last), { addSuffix: true }) : "No calls yet"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <TekmetricConnectionBadge connection={tekmetric} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
@@ -304,6 +331,52 @@ function AdminHome() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+type TenantExternalConnectionHealth = {
+  tenant_id: string;
+  provider: "tekmetric" | string;
+  is_connected: boolean;
+  status: string;
+  health_status: string;
+  last_synced_at: string | null;
+  contact_count: number;
+  pending_contact_count: number;
+};
+
+function TekmetricConnectionBadge({ connection }: { connection?: TenantExternalConnectionHealth }) {
+  if (!connection || !connection.is_connected) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
+        <Database className="h-3.5 w-3.5" />
+        Not connected
+      </span>
+    );
+  }
+
+  const isHealthy = connection.health_status === "healthy";
+  const isStale = connection.health_status === "stale" || connection.health_status === "connected_never_synced";
+  const statusClass = isHealthy
+    ? "border-success/30 bg-success/15 text-success"
+    : isStale
+      ? "border-warning/30 bg-warning/15 text-warning"
+      : "border-destructive/30 bg-destructive/15 text-destructive";
+  const label = isHealthy ? "Connected" : isStale ? "Needs sync" : connection.status.replace(/_/g, " ");
+  const synced = connection.last_synced_at
+    ? formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })
+    : "never synced";
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className={`inline-flex w-fit items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium capitalize ${statusClass}`}>
+        <Database className="h-3.5 w-3.5" />
+        {label}
+      </span>
+      <span className="text-[11px] text-muted-foreground">
+        {connection.contact_count.toLocaleString()} contacts · {synced}
+      </span>
     </div>
   );
 }
