@@ -325,7 +325,7 @@ function ClientIntegrationsView({ tenant }: { tenant: Tenant }) {
 
   const syncMutation = useMutation({
     mutationFn: runSyncCheck,
-    onSuccess: (count) => {
+    onSuccess: (count: number) => {
       queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health", tenant.id] });
       queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health"] });
       toast.success(`Tekmetric sync check found ${count} due contact${count === 1 ? "" : "s"}.`);
