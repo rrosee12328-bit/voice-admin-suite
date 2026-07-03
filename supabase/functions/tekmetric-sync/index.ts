@@ -374,24 +374,23 @@ async function previewDueCustomers(req: Request, payload: JsonObject) {
     records = await fetchTekmetricRecords(token, monthsSinceService, limit);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tekmetric sync failed";
-    if (payload.soft_fail === true) {
-      await upsertTekmetricIntegration({
-        tenantId,
-        status: "error",
-        monthsSinceService,
-        error: message,
-      });
-      return response(200, {
-        ok: false,
-        provider: "tekmetric",
-        months_since_service: monthsSinceService,
-        cutoff_date: cutoff.toISOString().slice(0, 10),
-        count: 0,
-        contacts: [],
-        error: message,
-      });
-    }
-    throw error;
+    console.error("Tekmetric preview failed", message);
+    await upsertTekmetricIntegration({
+      tenantId,
+      status: "error",
+      monthsSinceService,
+      error: message,
+    });
+    return response(200, {
+      ok: false,
+      provider: "tekmetric",
+      months_since_service: monthsSinceService,
+      cutoff_date: cutoff.toISOString().slice(0, 10),
+      count: 0,
+      contacts: [],
+      error: message,
+      fallback: true,
+    });
   }
   const seenPhones = new Set<string>();
   const contacts = records
