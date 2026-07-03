@@ -74,6 +74,13 @@ type TekmetricPreviewContact = {
   due_reason?: string;
 };
 
+type TekmetricSyncCheckResult = {
+  ok: boolean;
+  count: number;
+  cutoffDate?: string;
+  error?: string;
+};
+
 function normalizeClientName(value: string | null | undefined) {
   return (value ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
 }
@@ -81,6 +88,23 @@ function normalizeClientName(value: string | null | undefined) {
 function textAnswer(answers: Record<string, unknown>, key: string) {
   const value = answers[key];
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+async function functionErrorMessage(error: unknown) {
+  const fallback = error instanceof Error ? error.message : "Function request failed.";
+  const response = (error as { context?: Response | null })?.context;
+  if (!response) return fallback;
+  try {
+    const body = await response.clone().json();
+    if (typeof body?.error === "string" && body.error.trim()) return body.error;
+    if (typeof body?.message === "string" && body.message.trim()) return body.message;
+  } catch {
+    try {
+      const text = await response.clone().text();
+      if (text.trim()) return text.trim();
+    } catch {}
+  }
+  return fallback;
 }
 
 function AdminClientView() {
@@ -245,7 +269,7 @@ function ClientIntegrationsView({ tenant }: { tenant: Tenant }) {
   const queryClient = useQueryClient();
   const [monthsSinceService, setMonthsSinceService] = useState(3);
   const [previewContacts, setPreviewContacts] = useState<TekmetricPreviewContact[]>([]);
-  const [previewMeta, setPreviewMeta] = useState<{ cutoffDate?: string; count?: number } | null>(null);
+  const [previewMeta, setPreviewMeta] = useState<{ cutoffDate?: string; count?: number; error?: string } | null>(null);
 
   const connectionQ = useQuery({
     queryKey: ["tenant-external-connection-health", tenant.id],
@@ -314,26 +338,39 @@ function ClientIntegrationsView({ tenant }: { tenant: Tenant }) {
         tenant_id: tenant.id,
         months_since_service: monthsSinceService,
         limit: 25,
+        soft_fail: true,
       },
     });
-    if (error) throw error;
+    if (error) throw new Error(await functionErrorMessage(error));
     const contacts = (data?.contacts ?? []) as TekmetricPreviewContact[];
     setPreviewContacts(contacts);
-    setPreviewMeta({ cutoffDate: data?.cutoff_date, count: data?.count });
-    return contacts.length;
+    setPreviewMeta({ cutoffDate: data?.cutoff_date, count: data?.count, error: data?.error });
+    return {
+      ok: data?.ok !== false,
+      count: contacts.length,
+      cutoffDate: data?.cutoff_date,
+      error: data?.error,
+    } satisfies TekmetricSyncCheckResult;
   };
 
   const syncMutation = useMutation({
     mutationFn: runSyncCheck,
-    onSuccess: (count: number) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health", tenant.id] });
       queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health"] });
-      toast.success(`Tekmetric sync check found ${count} due contact${count === 1 ? "" : "s"}.`);
+      if (result.ok) {
+        toast.success(`Tekmetric sync check found ${result.count} due contact${result.count === 1 ? "" : "s"}.`);
+      } else {
+        toast.error(result.error || "Tekmetric sync check failed.");
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const connection = connectionQ.data;
+  const lastTekmetricError = typeof connection?.settings?.last_error === "string"
+    ? connection.settings.last_error
+    : null;
   const connected = !!connection?.is_connected;
   const healthy = connection?.health_status === "healthy";
   const stale = connection?.health_status === "stale" || connection?.health_status === "connected_never_synced";
@@ -420,6 +457,13 @@ function ClientIntegrationsView({ tenant }: { tenant: Tenant }) {
             </p>
           </div>
         </div>
+
+        {(lastTekmetricError || previewMeta?.error) && (
+          <div className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            <p className="font-medium">Latest Tekmetric error</p>
+            <p className="mt-1 break-words text-xs">{previewMeta?.error || lastTekmetricError}</p>
+          </div>
+        )}
       </section>
 
       {previewMeta && (
@@ -431,7 +475,11 @@ function ClientIntegrationsView({ tenant }: { tenant: Tenant }) {
             </p>
           </div>
           {previewContacts.length === 0 ? (
-            <div className="p-5 text-sm text-muted-foreground">Tekmetric responded, but no due contacts matched this window.</div>
+            <div className="p-5 text-sm text-muted-foreground">
+              {previewMeta.error
+                ? "Tekmetric did not complete this sync check. See the error above."
+                : "Tekmetric responded, but no due contacts matched this window."}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] text-sm">

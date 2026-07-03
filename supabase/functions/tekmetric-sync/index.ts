@@ -305,7 +305,7 @@ async function fetchTekmetricRecords(token: string, monthsSinceService: number, 
     try {
       const body = await tekmetricGet(path, token, params);
       const records = asArray(body);
-      if (records.length > 0) return records;
+      return records;
     } catch (error) {
       errors.push(error instanceof Error ? error.message : "Repair-order fetch failed");
     }
@@ -319,13 +319,43 @@ async function fetchTekmetricRecords(token: string, monthsSinceService: number, 
         size: Math.min(Math.max(limit, 1), 500),
       });
       const records = asArray(body);
-      if (records.length > 0) return records;
+      return records;
     } catch (error) {
       errors.push(error instanceof Error ? error.message : "Customer fetch failed");
     }
   }
 
   throw new Error(`Tekmetric returned no records. ${errors.slice(0, 3).join(" ")}`);
+}
+
+async function upsertTekmetricIntegration(input: {
+  tenantId: string;
+  status: "connected" | "error";
+  monthsSinceService: number;
+  error?: string | null;
+}) {
+  const settings: JsonObject = {
+    shop_id: TEKMETRIC_SHOP_ID || null,
+    months_since_service: input.monthsSinceService,
+  };
+  if (input.error) {
+    settings.last_error = input.error.slice(0, 500);
+    settings.last_error_at = new Date().toISOString();
+  }
+
+  await rest("tenant_integrations", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+      tenant_id: input.tenantId,
+      provider: "tekmetric",
+      status: input.status,
+      environment_url: TEKMETRIC_BASE_URL,
+      settings,
+      last_synced_at: input.status === "connected" ? new Date().toISOString() : undefined,
+      updated_at: new Date().toISOString(),
+    }),
+  }).catch((error) => console.error("Failed to upsert tenant integration", error));
 }
 
 async function previewDueCustomers(req: Request, payload: JsonObject) {
@@ -338,8 +368,31 @@ async function previewDueCustomers(req: Request, payload: JsonObject) {
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - monthsSinceService);
 
-  const token = await getTekmetricToken();
-  const records = await fetchTekmetricRecords(token, monthsSinceService, limit);
+  let records: unknown[] = [];
+  try {
+    const token = await getTekmetricToken();
+    records = await fetchTekmetricRecords(token, monthsSinceService, limit);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Tekmetric sync failed";
+    if (payload.soft_fail === true) {
+      await upsertTekmetricIntegration({
+        tenantId,
+        status: "error",
+        monthsSinceService,
+        error: message,
+      });
+      return response(200, {
+        ok: false,
+        provider: "tekmetric",
+        months_since_service: monthsSinceService,
+        cutoff_date: cutoff.toISOString().slice(0, 10),
+        count: 0,
+        contacts: [],
+        error: message,
+      });
+    }
+    throw error;
+  }
   const seenPhones = new Set<string>();
   const contacts = records
     .map(normalizeRecord)
@@ -356,22 +409,11 @@ async function previewDueCustomers(req: Request, payload: JsonObject) {
     })
     .slice(0, limit);
 
-  await rest("tenant_integrations", {
-    method: "POST",
-    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify({
-      tenant_id: tenantId,
-      provider: "tekmetric",
-      status: "connected",
-      environment_url: TEKMETRIC_BASE_URL,
-      settings: {
-        shop_id: TEKMETRIC_SHOP_ID || null,
-        months_since_service: monthsSinceService,
-      },
-      last_synced_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }),
-  }).catch((error) => console.error("Failed to upsert tenant integration", error));
+  await upsertTekmetricIntegration({
+    tenantId,
+    status: "connected",
+    monthsSinceService,
+  });
 
   return response(200, {
     ok: true,

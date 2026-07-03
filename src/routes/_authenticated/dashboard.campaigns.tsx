@@ -155,6 +155,23 @@ const DEFAULT_FORM = {
   campaign_end_date: "",
 };
 
+async function functionErrorMessage(error: unknown) {
+  const fallback = error instanceof Error ? error.message : "Function request failed.";
+  const response = (error as { context?: Response | null })?.context;
+  if (!response) return fallback;
+  try {
+    const body = await response.clone().json();
+    if (typeof body?.error === "string" && body.error.trim()) return body.error;
+    if (typeof body?.message === "string" && body.message.trim()) return body.message;
+  } catch {
+    try {
+      const text = await response.clone().text();
+      if (text.trim()) return text.trim();
+    } catch {}
+  }
+  return fallback;
+}
+
 type CampaignContactDraft = Record<string, any> & {
   first_name?: string;
   last_name?: string;
@@ -308,7 +325,7 @@ function CampaignsPage() {
           limit: tekmetricLimit,
         },
       });
-      if (error) throw error;
+      if (error) throw new Error(await functionErrorMessage(error));
       const contacts = (data?.contacts ?? []) as CampaignContactDraft[];
       return contacts;
     },
