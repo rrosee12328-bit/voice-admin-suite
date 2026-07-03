@@ -173,7 +173,7 @@ export const getClientAccountForTenant = createServerFn({ method: "POST" })
     }
 
     const profileRes = await fetch(
-      `${baseUrl}/rest/v1/profiles?tenant_id=eq.${data.tenantId}&select=id,tenant_id,role,full_name,name,email&order=role.asc&limit=1`,
+      `${baseUrl}/rest/v1/profiles?tenant_id=eq.${data.tenantId}&select=id,tenant_id,role,name,email&order=role.asc&limit=1`,
       { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
     );
     if (!profileRes.ok) {
@@ -184,7 +184,6 @@ export const getClientAccountForTenant = createServerFn({ method: "POST" })
       id: string;
       tenant_id: string | null;
       role: string | null;
-      full_name: string | null;
       name: string | null;
       email: string | null;
     }>;
@@ -200,7 +199,7 @@ export const getClientAccountForTenant = createServerFn({ method: "POST" })
           id: profile.id,
           tenant_id: profile.tenant_id,
           role: profile.role ?? "client_admin",
-          full_name: profile.full_name,
+          full_name: profile.name,
           name: profile.name,
           email: profile.email,
         },
@@ -219,7 +218,7 @@ export const getClientAccountForTenant = createServerFn({ method: "POST" })
         id: profile.id,
         tenant_id: profile.tenant_id,
         role: profile.role ?? "client_admin",
-        full_name: profile.full_name,
+        full_name: profile.name,
         name: profile.name,
         email: profile.email,
       },
@@ -318,7 +317,6 @@ export const createOrUpdateClientAccountForTenant = createServerFn({ method: "PO
       role: "client_admin",
       email: data.email,
       name: data.name || null,
-      full_name: data.name || null,
     };
     const upsertProfileRes = await fetch(`${baseUrl}/rest/v1/profiles?on_conflict=id`, {
       method: "POST",

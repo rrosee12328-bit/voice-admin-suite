@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ArrowLeft, BarChart3, Eye, ExternalLink, Loader2, Mail, Receipt, Phone, Clock, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Database, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
@@ -325,7 +325,7 @@ function ClientIntegrationsView({ tenant }: { tenant: Tenant }) {
 
   const syncMutation = useMutation({
     mutationFn: runSyncCheck,
-    onSuccess: (count) => {
+    onSuccess: (count: number) => {
       queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health", tenant.id] });
       queryClient.invalidateQueries({ queryKey: ["tenant-external-connection-health"] });
       toast.success(`Tekmetric sync check found ${count} due contact${count === 1 ? "" : "s"}.`);
