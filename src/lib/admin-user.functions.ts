@@ -317,7 +317,6 @@ export const createOrUpdateClientAccountForTenant = createServerFn({ method: "PO
       role: "client_admin",
       email: data.email,
       name: data.name || null,
-      full_name: data.name || null,
     };
     const upsertProfileRes = await fetch(`${baseUrl}/rest/v1/profiles?on_conflict=id`, {
       method: "POST",
