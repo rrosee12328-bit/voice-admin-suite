@@ -43,6 +43,8 @@ import {
   ChevronDown,
   ChevronUp,
   Megaphone,
+  Database,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -153,6 +155,20 @@ const DEFAULT_FORM = {
   campaign_end_date: "",
 };
 
+type CampaignContactDraft = Record<string, any> & {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  email?: string;
+  last_service_date?: string;
+  vehicle_info?: string;
+  notes?: string;
+  external_source?: string;
+  external_id?: string;
+  due_reason?: string;
+  source_payload?: Record<string, unknown>;
+};
+
 function CampaignsPage() {
   const me = useMe();
   const qc = useQueryClient();
@@ -164,7 +180,9 @@ function CampaignsPage() {
   const [step, setStep] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ ...DEFAULT_FORM });
-  const [csvContacts, setCsvContacts] = useState<Array<Record<string, string>>>([]);
+  const [csvContacts, setCsvContacts] = useState<CampaignContactDraft[]>([]);
+  const [tekmetricMonths, setTekmetricMonths] = useState(3);
+  const [tekmetricLimit, setTekmetricLimit] = useState(100);
 
   // Fetch campaigns
   const { data: campaigns = [], isLoading } = useQuery({
@@ -224,6 +242,13 @@ function CampaignsPage() {
           campaign_end_type: form.campaign_end_type,
           campaign_end_date: form.campaign_end_type === "date" ? form.campaign_end_date || null : null,
           campaign_end_days: form.campaign_end_type === "days" ? form.campaign_end_days : null,
+          source: csvContacts.some((c) => c.external_source === "tekmetric") ? "tekmetric" : "csv",
+          source_config: csvContacts.some((c) => c.external_source === "tekmetric")
+            ? { provider: "tekmetric", months_since_service: tekmetricMonths }
+            : {},
+          source_synced_at: csvContacts.some((c) => c.external_source === "tekmetric")
+            ? new Date().toISOString()
+            : null,
           started_at: form.start_type === "immediate" ? new Date().toISOString() : null,
         })
         .select()
@@ -272,9 +297,33 @@ function CampaignsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const importTekmetricContacts = useMutation({
+    mutationFn: async () => {
+      if (!tenantId) throw new Error("No tenant found for this account.");
+      const { data, error } = await supabase.functions.invoke("tekmetric-sync", {
+        body: {
+          action: "preview_due_customers",
+          tenant_id: tenantId,
+          months_since_service: tekmetricMonths,
+          limit: tekmetricLimit,
+        },
+      });
+      if (error) throw error;
+      const contacts = (data?.contacts ?? []) as CampaignContactDraft[];
+      return contacts;
+    },
+    onSuccess: (contacts) => {
+      setCsvContacts(contacts);
+      toast.success(`Imported ${contacts.length} Tekmetric contact${contacts.length === 1 ? "" : "s"}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   function resetForm() {
     setForm({ ...DEFAULT_FORM });
     setCsvContacts([]);
+    setTekmetricMonths(3);
+    setTekmetricLimit(100);
     setStep(1);
   }
 
@@ -741,6 +790,60 @@ function CampaignsPage() {
           {/* ── Step 4: Contacts ── */}
           {step === 4 && (
             <div className="space-y-4">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                    <Database className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-blue-950">Import from Tekmetric</p>
+                        <p className="text-xs text-blue-800">
+                          Pull past customers whose last service is older than the selected window.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="mt-2 gap-2 bg-blue-600 text-white hover:bg-blue-700 sm:mt-0"
+                        onClick={() => importTekmetricContacts.mutate()}
+                        disabled={importTekmetricContacts.isPending}
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${importTekmetricContacts.isPending ? "animate-spin" : ""}`} />
+                        {importTekmetricContacts.isPending ? "Importing..." : "Import"}
+                      </Button>
+                    </div>
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label htmlFor="tekmetric-months" className="text-xs text-blue-950">Months since service</Label>
+                        <Input
+                          id="tekmetric-months"
+                          type="number"
+                          min={1}
+                          max={36}
+                          value={tekmetricMonths}
+                          onChange={(e) => setTekmetricMonths(Math.max(1, Math.min(36, Number(e.target.value) || 3)))}
+                          className="mt-1 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tekmetric-limit" className="text-xs text-blue-950">Max contacts</Label>
+                        <Input
+                          id="tekmetric-limit"
+                          type="number"
+                          min={1}
+                          max={500}
+                          value={tekmetricLimit}
+                          onChange={(e) => setTekmetricLimit(Math.max(1, Math.min(500, Number(e.target.value) || 100)))}
+                          className="mt-1 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="p-3 bg-amber-50 rounded-lg text-sm text-amber-800">
                 <strong>CSV Format:</strong> Columns: <code>first_name</code>, <code>last_name</code>, <code>phone</code>, and optionally <code>email</code>, <code>vehicle_info</code>, <code>last_service_date</code>, <code>notes</code>.
               </div>
@@ -764,6 +867,7 @@ function CampaignsPage() {
                           <TableHead className="text-xs">Name</TableHead>
                           <TableHead className="text-xs">Phone</TableHead>
                           <TableHead className="text-xs">Vehicle</TableHead>
+                          <TableHead className="text-xs">Source</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -772,10 +876,13 @@ function CampaignsPage() {
                             <TableCell className="text-xs">{[c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
                             <TableCell className="text-xs">{c.phone}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{c.vehicle_info || "—"}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {c.external_source === "tekmetric" ? c.due_reason || "Tekmetric" : "CSV"}
+                            </TableCell>
                           </TableRow>
                         ))}
                         {csvContacts.length > 20 && (
-                          <TableRow><TableCell colSpan={3} className="text-xs text-center text-muted-foreground">+{csvContacts.length - 20} more</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={4} className="text-xs text-center text-muted-foreground">+{csvContacts.length - 20} more</TableCell></TableRow>
                         )}
                       </TableBody>
                     </Table>
