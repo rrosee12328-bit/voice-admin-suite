@@ -1,4 +1,6 @@
-create or replace view public.tenant_integration_health as
+create or replace view public.tenant_integration_health
+with (security_invoker = true)
+as
 select
   t.id as tenant_id,
   t.name as tenant_name,
@@ -58,3 +60,5 @@ left join lateral (
   from public.email_messages em
   where em.tenant_id = t.id
 ) email_stats on true;
+
+grant select on public.tenant_integration_health to authenticated;

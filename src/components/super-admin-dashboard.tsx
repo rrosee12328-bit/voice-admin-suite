@@ -13,6 +13,7 @@ import {
   TrendingUp,
   ArrowUpRight,
   Trophy,
+  ShieldCheck,
 } from "lucide-react";
 import { subDays, startOfDay, startOfMonth, format } from "date-fns";
 import {
@@ -36,6 +37,46 @@ import { PlanBadge } from "@/components/badges";
 import { cn } from "@/lib/utils";
 
 const secondsToBillableMinutes = (seconds: number) => Math.ceil(seconds / 60);
+
+type TenantIntegrationHealth = {
+  tenant_id: string;
+  tenant_name: string;
+  slug: string | null;
+  agent_status: string | null;
+  has_retell_mapping: boolean;
+  client_profile_count: number;
+  super_admin_count: number;
+  last_call_at: string | null;
+  calls_last_24_hours: number;
+  calls_last_7_days: number;
+  minutes_last_7_days: number;
+  minutes_used_this_month: number | null;
+  minutes_included: number | null;
+  last_email_at: string | null;
+  failed_emails_last_7_days: number;
+  health_status:
+    | "healthy"
+    | "missing_retell_mapping"
+    | "missing_super_admin"
+    | "missing_client_profile"
+    | "email_failures"
+    | "live_no_calls"
+    | string;
+};
+
+const healthLabel: Record<string, string> = {
+  healthy: "Healthy",
+  missing_retell_mapping: "Missing Retell mapping",
+  missing_super_admin: "Missing super admin",
+  missing_client_profile: "Missing client profile",
+  email_failures: "Email failures",
+  live_no_calls: "Live with no calls",
+};
+
+function formatShortDate(value: string | null) {
+  if (!value) return "Never";
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export function SuperAdminDashboard() {
   const queryClient = useQueryClient();
@@ -80,6 +121,21 @@ export function SuperAdminDashboard() {
     },
   });
 
+  const integrationHealthQ = useQuery({
+    queryKey: ["tenant-integration-health"],
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenant_integration_health")
+        .select("*")
+        .order("health_status", { ascending: true })
+        .order("tenant_name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as TenantIntegrationHealth[];
+    },
+  });
+
   useEffect(() => {
     const channel = supabase
       .channel("super-admin-dashboard")
@@ -88,6 +144,7 @@ export function SuperAdminDashboard() {
         { event: "*", schema: "public", table: "calls" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["sa-calls-30d"] });
+          queryClient.invalidateQueries({ queryKey: ["tenant-integration-health"] });
         },
       )
       .on(
@@ -95,6 +152,21 @@ export function SuperAdminDashboard() {
         { event: "*", schema: "public", table: "tenants" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+          queryClient.invalidateQueries({ queryKey: ["tenant-integration-health"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "email_messages" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["tenant-integration-health"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["tenant-integration-health"] });
         },
       )
       .subscribe();
@@ -106,6 +178,20 @@ export function SuperAdminDashboard() {
 
   const tenants = tenantsQ.data ?? [];
   const calls = callsQ.data ?? [];
+  const integrationHealth = integrationHealthQ.data ?? [];
+  const integrationIssues = integrationHealth
+    .filter((row) => row.health_status !== "healthy")
+    .sort((a, b) => {
+      const score = (status: string) =>
+        status === "missing_retell_mapping" ? 5 :
+        status === "missing_super_admin" ? 4 :
+        status === "email_failures" ? 3 :
+        status === "missing_client_profile" ? 2 :
+        status === "live_no_calls" ? 1 :
+        0;
+      return score(b.health_status) - score(a.health_status) ||
+        a.tenant_name.localeCompare(b.tenant_name);
+    });
   const isLoading = tenantsQ.isLoading || callsQ.isLoading;
 
   const tenantById: Record<string, Tenant> = {};
@@ -350,6 +436,110 @@ export function SuperAdminDashboard() {
             {Object.keys(perTenant).length} active this month
           </p>
         </KpiTile>
+      </section>
+
+      <section className="grid grid-cols-12 gap-4">
+        <SpotlightCard className="col-span-12" radius={420}>
+          <div className="grid grid-cols-1 gap-3 border-b border-border/60 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-5">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className={cn(
+                "h-4 w-4",
+                integrationIssues.length ? "text-warning" : "text-success",
+              )} />
+              <div>
+                <h2 className="text-sm font-semibold">Integration health</h2>
+                <p className="text-xs text-muted-foreground">
+                  Retell mapping, webhook data, email delivery, and workspace profile coverage
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className={cn(
+                "inline-flex rounded-md border px-2 py-1 font-medium",
+                integrationIssues.length
+                  ? "border-warning/30 bg-warning/15 text-warning"
+                  : "border-success/30 bg-success/15 text-success",
+              )}>
+                {integrationIssues.length} issue{integrationIssues.length === 1 ? "" : "s"}
+              </span>
+            </div>
+          </div>
+
+          {integrationHealthQ.isLoading ? (
+            <div className="grid gap-2 p-5 sm:grid-cols-3">
+              <div className="h-16 animate-pulse rounded bg-muted" />
+              <div className="h-16 animate-pulse rounded bg-muted" />
+              <div className="h-16 animate-pulse rounded bg-muted" />
+            </div>
+          ) : integrationHealthQ.error ? (
+            <div className="p-5 text-sm text-destructive">
+              Integration health view is not available yet. Apply the Supabase migration, then refresh this dashboard.
+            </div>
+          ) : integrationIssues.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 p-8 text-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/15 text-success">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <p className="text-sm font-medium">All integrations are healthy</p>
+              <p className="text-xs text-muted-foreground">
+                Every workspace has Retell mapping, profile coverage, and no recent email failures.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead className="border-b border-border/60 bg-muted/30 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <tr>
+                    <th className="px-5 py-3 text-left font-semibold">Workspace</th>
+                    <th className="px-5 py-3 text-left font-semibold">Issue</th>
+                    <th className="px-5 py-3 text-left font-semibold">Last call</th>
+                    <th className="px-5 py-3 text-left font-semibold">7 day calls</th>
+                    <th className="px-5 py-3 text-left font-semibold">Email failures</th>
+                    <th className="px-5 py-3 text-right font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {integrationIssues.slice(0, 8).map((row) => (
+                    <tr key={row.tenant_id} className="transition-colors hover:bg-muted/30">
+                      <td className="px-5 py-3">
+                        <div className="font-medium">{row.tenant_name}</div>
+                        <div className="text-xs text-muted-foreground">{row.slug ?? row.tenant_id.slice(0, 8)}</div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={cn(
+                          "inline-flex rounded-md border px-2 py-1 text-xs font-medium",
+                          row.health_status === "email_failures"
+                            ? "border-destructive/30 bg-destructive/15 text-destructive"
+                            : "border-warning/30 bg-warning/15 text-warning",
+                        )}>
+                          {healthLabel[row.health_status] ?? row.health_status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-muted-foreground">{formatShortDate(row.last_call_at)}</td>
+                      <td className="px-5 py-3 tabular-nums text-muted-foreground">
+                        {row.calls_last_7_days.toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3 tabular-nums text-muted-foreground">
+                        {row.failed_emails_last_7_days.toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        {row.slug && (
+                          <Link
+                            to="/admin/clients/$slug"
+                            params={{ slug: row.slug }}
+                            className="inline-flex rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            Open
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SpotlightCard>
       </section>
 
       {/* CHART + OUTCOME + TOP TENANTS */}
