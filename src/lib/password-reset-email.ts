@@ -94,15 +94,20 @@ async function verifyResetToken(token: string, serviceKey: string) {
 }
 
 async function findAuthUserByEmail(baseUrl: string, serviceKey: string, email: string) {
-  const res = await fetch(`${baseUrl}/auth/v1/admin/users?page=1&per_page=1000`, {
-    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
-  });
+  const encodedEmail = encodeURIComponent(email);
+  const res = await fetch(
+    `${baseUrl}/rest/v1/profiles?select=id,email&email=eq.${encodedEmail}&limit=1`,
+    {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    },
+  );
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`Could not look up account (${res.status}): ${body.slice(0, 300)}`);
   }
-  const json = (await res.json()) as { users?: Array<{ id?: string; email?: string | null }> };
-  return json.users?.find((user) => user.id && user.email?.toLowerCase() === email.toLowerCase()) ?? null;
+  const rows = (await res.json()) as Array<{ id?: string; email?: string | null }>;
+  const profile = rows.find((row) => row.id && row.email?.toLowerCase() === email.toLowerCase());
+  return profile ? { id: profile.id, email: profile.email } : null;
 }
 
 export async function deliverPasswordResetEmail(args: { email: string; redirectTo: string }) {
