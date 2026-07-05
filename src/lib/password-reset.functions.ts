@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { deliverPasswordResetEmail, updatePasswordWithResetToken } from "@/lib/password-reset-email";
+import {
+  deliverPasswordResetEmail,
+  updatePasswordForEmail,
+  updatePasswordWithResetToken,
+} from "@/lib/password-reset-email";
 
 const InputSchema = z.object({
   email: z.string().email().max(320),
@@ -19,3 +23,12 @@ const SetPasswordSchema = z.object({
 export const setPasswordWithResetToken = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SetPasswordSchema.parse(input))
   .handler(async ({ data }) => updatePasswordWithResetToken(data));
+
+const DirectSetPasswordSchema = z.object({
+  email: z.string().email().max(320),
+  password: z.string().min(8).max(128),
+});
+
+export const setPasswordForEmail = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => DirectSetPasswordSchema.parse(input))
+  .handler(async ({ data }) => updatePasswordForEmail(data));

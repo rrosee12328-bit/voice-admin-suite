@@ -213,3 +213,28 @@ export async function updatePasswordWithResetToken(args: { resetToken: string; p
 
   return { ok: true as const, email: verified.email };
 }
+
+export async function updatePasswordForEmail(args: { email: string; password: string }) {
+  const { baseUrl, serviceKey } = vektissEnv();
+  if (!serviceKey) throw new Error("VEKTISS_SUPABASE_SERVICE_ROLE_KEY is not configured");
+
+  const user = await findAuthUserByEmail(baseUrl, serviceKey, args.email);
+  if (!user?.id || !user.email) throw new Error("No Vektiss account found for that email.");
+
+  const authRes = await fetch(`${baseUrl}/auth/v1/admin/users/${user.id}`, {
+    method: "PUT",
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password: args.password, email_confirm: true }),
+  });
+
+  if (!authRes.ok) {
+    const body = await authRes.text().catch(() => "");
+    throw new Error(`Password update failed (${authRes.status}): ${body.slice(0, 300)}`);
+  }
+
+  return { ok: true as const, email: user.email };
+}
