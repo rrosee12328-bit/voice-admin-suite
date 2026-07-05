@@ -130,6 +130,7 @@ export async function deliverPasswordResetEmail(args: { email: string; redirectT
 
   const resetUrl = new URL(args.redirectTo);
   resetUrl.searchParams.set("reset_token", resetToken);
+  resetUrl.searchParams.set("email", user.email);
 
   const from = process.env.RESEND_FROM || "Vektiss Support <support@support.vektiss.com>";
   const subject = "Reset your Vektiss Voice password";

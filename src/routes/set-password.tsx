@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
-import { setPasswordWithResetToken } from "@/lib/password-reset.functions";
+import { sendPasswordResetEmail, setPasswordWithResetToken } from "@/lib/password-reset.functions";
 import vektissLogo from "@/assets/vektiss-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ function SetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetToken, setResetToken] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSendLoading, setResetSendLoading] = useState(false);
 
   // Reset links can arrive as a token_hash query, a PKCE code query, or the
   // older access-token hash. Turn any of those into a session before showing
@@ -35,9 +37,12 @@ function SetPasswordPage() {
       const tokenHash = params.get("token_hash");
       const code = params.get("code");
       const vektissResetToken = params.get("reset_token");
+      const email = params.get("email");
       const accessToken = params.get("access_token") || hashParams.get("access_token");
       const refreshToken = params.get("refresh_token") || hashParams.get("refresh_token");
       const type = params.get("type") === "invite" ? "invite" : "recovery";
+
+      if (email) setResetEmail(email);
 
       if (vektissResetToken) {
         if (cancelled) return;
@@ -156,6 +161,29 @@ function SetPasswordPage() {
     navigate({ to: "/dashboard" });
   };
 
+  const sendFreshReset = async () => {
+    const target = resetEmail.trim();
+    if (!target) {
+      toast.error("Enter your email first.");
+      return;
+    }
+
+    setResetSendLoading(true);
+    try {
+      await sendPasswordResetEmail({
+        data: {
+          email: target,
+          redirectTo: `${window.location.origin}/set-password`,
+        },
+      });
+      toast.success(`New password reset email sent to ${target}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send reset email.");
+    } finally {
+      setResetSendLoading(false);
+    }
+  };
+
   return (
     <div className="bg-grid flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
@@ -171,15 +199,24 @@ function SetPasswordPage() {
         {!ready ? (
           <div className="mt-8 h-24 animate-pulse rounded-md bg-muted" />
         ) : !hasSession ? (
-          <div className="mt-6 rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-            This password reset link is invalid or has expired. Please contact{" "}
-            <a
-              href="mailto:info@vektiss.com"
-              className="font-medium text-foreground underline-offset-2 hover:underline"
-            >
-              info@vektiss.com
-            </a>{" "}
-            for a new invite.
+          <div className="mt-6 space-y-4 rounded-md border border-border bg-muted/40 p-4">
+            <p className="text-sm text-muted-foreground">
+              This password reset link is invalid or has expired. Send yourself a fresh reset link.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="rrose@vektiss.com"
+              />
+            </div>
+            <Button type="button" className="w-full" onClick={sendFreshReset} disabled={resetSendLoading}>
+              {resetSendLoading ? "Sending..." : "Send new reset link"}
+            </Button>
           </div>
         ) : (
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
