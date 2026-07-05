@@ -1,5 +1,6 @@
 const VEKTISS_SUPABASE_PROJECT_ID = "hygmztvpmmyxuomjwrbt";
 const VEKTISS_SUPABASE_URL = `https://${VEKTISS_SUPABASE_PROJECT_ID}.supabase.co`;
+const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 function vektissEnv() {
   const configuredUrl = process.env.VEKTISS_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -68,7 +69,7 @@ async function createResetToken(args: { email: string; userId: string; serviceKe
     JSON.stringify({
       email: args.email,
       userId: args.userId,
-      exp: Date.now() + 30 * 60 * 1000,
+      exp: Date.now() + RESET_TOKEN_TTL_MS,
     }),
   );
   const signature = await sign(payload, args.serviceKey);
@@ -157,7 +158,7 @@ export async function deliverPasswordResetEmail(args: { email: string; redirectT
           </a>
         </p>
         <p style="margin:0 0 18px;font-size:13px;line-height:1.5;color:#64748b;">
-          If you did not request this, you can ignore this email.
+          This link expires in 24 hours. If you did not request this, you can ignore this email.
         </p>
         <p style="margin:22px 0 0;font-size:12px;line-height:1.5;color:#64748b;word-break:break-all;">
           Or open this link: ${safeResetUrl}

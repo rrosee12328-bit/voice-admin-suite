@@ -201,7 +201,7 @@ function SetPasswordPage() {
         ) : !hasSession ? (
           <div className="mt-6 space-y-4 rounded-md border border-border bg-muted/40 p-4">
             <p className="text-sm text-muted-foreground">
-              This password reset link is invalid or has expired. Send yourself a fresh reset link.
+              This password reset link is missing, invalid, or expired. Send yourself a fresh link, then open it to set your password on this page.
             </p>
             <div className="space-y-2">
               <Label htmlFor="reset-email">Email</Label>
@@ -215,7 +215,7 @@ function SetPasswordPage() {
               />
             </div>
             <Button type="button" className="w-full" onClick={sendFreshReset} disabled={resetSendLoading}>
-              {resetSendLoading ? "Sending..." : "Send new reset link"}
+              {resetSendLoading ? "Sending..." : "Send fresh reset link"}
             </Button>
           </div>
         ) : (
