@@ -1,22 +1,11 @@
-const DEFAULT_SUPABASE_PROJECT_ID = "hygmztvpmmyxuomjwrbt";
-const DEFAULT_SUPABASE_URL = `https://${DEFAULT_SUPABASE_PROJECT_ID}.supabase.co`;
-const DEFAULT_SUPABASE_PUBLISHABLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
-
-function isProductionProjectUrl(value?: string) {
-  return !!value && value.includes(DEFAULT_SUPABASE_PROJECT_ID);
-}
+import { resolveVektissPublishableKey, resolveVektissSupabaseUrl } from "./project";
 
 const configuredUrl = import.meta.env.VITE_SUPABASE_URL;
 const configuredKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const SUPABASE_URL =
-  configuredUrl && isProductionProjectUrl(configuredUrl) ? configuredUrl : DEFAULT_SUPABASE_URL;
+export const SUPABASE_URL = resolveVektissSupabaseUrl(configuredUrl);
 
-export const SUPABASE_PUBLISHABLE_KEY =
-  configuredUrl && isProductionProjectUrl(configuredUrl) && configuredKey
-    ? configuredKey
-    : DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+export const SUPABASE_PUBLISHABLE_KEY = resolveVektissPublishableKey(configuredUrl, configuredKey);
 
 export const SUPABASE_FUNCTIONS_URL = `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1`;
 

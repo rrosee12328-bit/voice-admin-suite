@@ -4,6 +4,10 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  resolveVektissPublishableKey,
+  resolveVektissSupabaseUrl,
+} from "@/integrations/supabase/project";
 import type { Database } from "@/integrations/supabase/types";
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -19,8 +23,11 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 export const requireAuthRobust = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    const SUPABASE_URL = resolveVektissSupabaseUrl(process.env.SUPABASE_URL);
+    const SUPABASE_PUBLISHABLE_KEY = resolveVektissPublishableKey(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_PUBLISHABLE_KEY,
+    );
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       throw new Error("Backend configuration missing");
     }

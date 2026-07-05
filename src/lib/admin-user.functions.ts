@@ -1,11 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import {
+  resolveVektissPublishableKey,
+  resolveVektissSupabaseUrl,
+} from "@/integrations/supabase/project";
 import { deliverPasswordResetEmail } from "@/lib/password-reset-email";
-
-const VEKTISS_SUPABASE_PROJECT_ID = "hygmztvpmmyxuomjwrbt";
-const VEKTISS_SUPABASE_URL = `https://${VEKTISS_SUPABASE_PROJECT_ID}.supabase.co`;
-const VEKTISS_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Z216dHZwbW15eHVvbWp3cmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTU2MDgsImV4cCI6MjA5NTU3MTYwOH0.ZDH9dTK-Oih5-eTRF_wgllcQru2Xn4qsi6l7rlu670E";
 
 function vektissEnv() {
   const configuredUrl = process.env.VEKTISS_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -14,11 +13,10 @@ function vektissEnv() {
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     "";
-  const matchesProduction = configuredUrl.includes(VEKTISS_SUPABASE_PROJECT_ID);
 
   return {
-    baseUrl: matchesProduction && configuredUrl ? configuredUrl : VEKTISS_SUPABASE_URL,
-    anonKey: matchesProduction && configuredAnonKey ? configuredAnonKey : VEKTISS_SUPABASE_ANON_KEY,
+    baseUrl: resolveVektissSupabaseUrl(configuredUrl),
+    anonKey: resolveVektissPublishableKey(configuredUrl, configuredAnonKey),
     serviceKey: process.env.VEKTISS_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "",
   };
 }

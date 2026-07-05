@@ -1,13 +1,12 @@
-const VEKTISS_SUPABASE_PROJECT_ID = "hygmztvpmmyxuomjwrbt";
-const VEKTISS_SUPABASE_URL = `https://${VEKTISS_SUPABASE_PROJECT_ID}.supabase.co`;
+import { resolveVektissSupabaseUrl } from "@/integrations/supabase/project";
+
 const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 function vektissEnv() {
   const configuredUrl = process.env.VEKTISS_SUPABASE_URL || process.env.SUPABASE_URL || "";
-  const matchesProduction = configuredUrl.includes(VEKTISS_SUPABASE_PROJECT_ID);
 
   return {
-    baseUrl: matchesProduction && configuredUrl ? configuredUrl : VEKTISS_SUPABASE_URL,
+    baseUrl: resolveVektissSupabaseUrl(configuredUrl),
     serviceKey: process.env.VEKTISS_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "",
   };
 }
