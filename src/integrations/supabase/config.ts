@@ -11,10 +11,10 @@ const configuredUrl = import.meta.env.VITE_SUPABASE_URL;
 const configuredKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const SUPABASE_URL =
-  configuredUrl && !isProductionProjectUrl(configuredUrl) ? configuredUrl : DEFAULT_SUPABASE_URL;
+  configuredUrl && isProductionProjectUrl(configuredUrl) ? configuredUrl : DEFAULT_SUPABASE_URL;
 
 export const SUPABASE_PUBLISHABLE_KEY =
-  configuredUrl && !isProductionProjectUrl(configuredUrl) && configuredKey
+  configuredUrl && isProductionProjectUrl(configuredUrl) && configuredKey
     ? configuredKey
     : DEFAULT_SUPABASE_PUBLISHABLE_KEY;
 
