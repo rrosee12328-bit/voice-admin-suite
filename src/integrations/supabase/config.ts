@@ -7,18 +7,16 @@ function isProductionProjectUrl(value?: string) {
   return !!value && value.includes(DEFAULT_SUPABASE_PROJECT_ID);
 }
 
-const configuredProjectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 const configuredUrl = import.meta.env.VITE_SUPABASE_URL;
 const configuredKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const configuredMatchesProduction =
-  configuredProjectId === DEFAULT_SUPABASE_PROJECT_ID ||
-  isProductionProjectUrl(configuredUrl);
 
 export const SUPABASE_URL =
-  configuredMatchesProduction && configuredUrl ? configuredUrl : DEFAULT_SUPABASE_URL;
+  configuredUrl && !isProductionProjectUrl(configuredUrl) ? configuredUrl : DEFAULT_SUPABASE_URL;
 
 export const SUPABASE_PUBLISHABLE_KEY =
-  configuredMatchesProduction && configuredKey ? configuredKey : DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+  configuredUrl && !isProductionProjectUrl(configuredUrl) && configuredKey
+    ? configuredKey
+    : DEFAULT_SUPABASE_PUBLISHABLE_KEY;
 
 export const SUPABASE_FUNCTIONS_URL = `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1`;
 
