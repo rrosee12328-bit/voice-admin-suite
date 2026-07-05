@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
+import { sendPasswordResetEmail } from "@/lib/password-reset.functions";
 import vektissLogo from "@/assets/vektiss-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,17 +46,19 @@ function LoginPage() {
     }
 
     setResetLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(target, {
-      redirectTo: `${window.location.origin}/set-password`,
-    });
-    setResetLoading(false);
-
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await sendPasswordResetEmail({
+        data: {
+          email: target,
+          redirectTo: `${window.location.origin}/set-password`,
+        },
+      });
+      toast.success(`Password reset email sent to ${target}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send reset email.");
+    } finally {
+      setResetLoading(false);
     }
-
-    toast.success(`Password reset email sent to ${target}`);
   };
 
   return (

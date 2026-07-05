@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { deliverPasswordResetEmail } from "@/lib/password-reset-email";
 
 const VEKTISS_SUPABASE_PROJECT_ID = "hygmztvpmmyxuomjwrbt";
 const VEKTISS_SUPABASE_URL = `https://${VEKTISS_SUPABASE_PROJECT_ID}.supabase.co`;
@@ -56,24 +57,10 @@ export const sendClientPasswordReset = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ResetSchema.parse(input))
   .handler(async ({ data }) => {
     await requireSuperAdmin(data.accessToken);
-    const { baseUrl, anonKey } = vektissEnv();
-
-    const body: Record<string, unknown> = { email: data.email };
-    if (data.redirectTo) body.redirect_to = data.redirectTo;
-
-    const res = await fetch(`${baseUrl}/auth/v1/recover`, {
-      method: "POST",
-      headers: {
-        apikey: anonKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+    return deliverPasswordResetEmail({
+      email: data.email,
+      redirectTo: data.redirectTo || "https://voice.vektiss.com/set-password",
     });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`Reset email failed (${res.status}): ${text.slice(0, 300)}`);
-    }
-    return { ok: true as const };
   });
 
 const UpdateEmailSchema = z.object({
@@ -86,7 +73,7 @@ export const updateClientEmail = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => UpdateEmailSchema.parse(input))
   .handler(async ({ data }) => {
     await requireSuperAdmin(data.accessToken);
-    const { baseUrl, anonKey, serviceKey } = vektissEnv();
+    const { baseUrl, serviceKey } = vektissEnv();
     if (!serviceKey) {
       throw new Error(
         "Updating a client's email requires the Vektiss service-role key. Add VEKTISS_SUPABASE_SERVICE_ROLE_KEY in project secrets.",
@@ -123,12 +110,10 @@ export const updateClientEmail = createServerFn({ method: "POST" })
       },
     ).catch(() => {});
 
-    // Trigger password reset so they can set a password for the new email
-    await fetch(`${baseUrl}/auth/v1/recover`, {
-      method: "POST",
-      headers: { apikey: anonKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ email: data.newEmail }),
-    }).catch(() => {});
+    await deliverPasswordResetEmail({
+      email: data.newEmail,
+      redirectTo: "https://voice.vektiss.com/set-password",
+    });
 
     return { ok: true as const };
   });
@@ -236,7 +221,7 @@ export const createOrUpdateClientAccountForTenant = createServerFn({ method: "PO
   .inputValidator((input: unknown) => UpsertTenantAccountSchema.parse(input))
   .handler(async ({ data }) => {
     await requireSuperAdmin(data.accessToken);
-    const { baseUrl, anonKey, serviceKey } = vektissEnv();
+    const { baseUrl, serviceKey } = vektissEnv();
     if (!serviceKey) {
       throw new Error(
         "Creating or updating a client account requires VEKTISS_SUPABASE_SERVICE_ROLE_KEY in project secrets.",
@@ -333,11 +318,10 @@ export const createOrUpdateClientAccountForTenant = createServerFn({ method: "PO
       throw new Error(`Profile update failed (${upsertProfileRes.status}): ${text.slice(0, 300)}`);
     }
 
-    await fetch(`${baseUrl}/auth/v1/recover`, {
-      method: "POST",
-      headers: { apikey: anonKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ email: data.email }),
-    }).catch(() => {});
+    await deliverPasswordResetEmail({
+      email: data.email,
+      redirectTo: "https://voice.vektiss.com/set-password",
+    });
 
     return {
       ok: true as const,
