@@ -22,6 +22,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +35,27 @@ function LoginPage() {
     }
     toast.success("Welcome back");
     navigate({ to: "/dashboard" });
+  };
+
+  const sendPasswordReset = async () => {
+    const target = email.trim();
+    if (!target) {
+      toast.error("Enter your email first.");
+      return;
+    }
+
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(target, {
+      redirectTo: `${window.location.origin}/set-password`,
+    });
+    setResetLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`Password reset email sent to ${target}`);
   };
 
   return (
@@ -60,7 +82,17 @@ function LoginPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="password">Password</Label>
+                <button
+                  type="button"
+                  onClick={sendPasswordReset}
+                  disabled={resetLoading}
+                  className="text-xs font-medium text-primary underline-offset-4 hover:underline disabled:pointer-events-none disabled:opacity-60"
+                >
+                  {resetLoading ? "Sending…" : "Forgot password?"}
+                </button>
+              </div>
               <div className="relative">
                 <Input
                   id="password"
