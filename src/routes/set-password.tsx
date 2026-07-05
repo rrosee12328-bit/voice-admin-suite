@@ -29,8 +29,11 @@ function SetPasswordPage() {
 
     const init = async () => {
       const params = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const tokenHash = params.get("token_hash");
       const code = params.get("code");
+      const accessToken = params.get("access_token") || hashParams.get("access_token");
+      const refreshToken = params.get("refresh_token") || hashParams.get("refresh_token");
       const type = params.get("type") === "invite" ? "invite" : "recovery";
 
       if (tokenHash) {
@@ -48,6 +51,19 @@ function SetPasswordPage() {
 
       if (code) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) toast.error(error.message);
+        if (cancelled) return;
+        setHasSession(!!data.session);
+        setReady(true);
+        window.history.replaceState(null, "", window.location.pathname);
+        return;
+      }
+
+      if (accessToken && refreshToken) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
         if (error) toast.error(error.message);
         if (cancelled) return;
         setHasSession(!!data.session);

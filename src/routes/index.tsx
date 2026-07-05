@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { routePasswordResetIfPresent } from "@/lib/password-reset-url";
 
 export const Route = createFileRoute("/")({
   component: IndexRedirect,
@@ -9,6 +10,7 @@ function IndexRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (routePasswordResetIfPresent(window.location)) return;
     navigate({ to: "/login", replace: true });
   }, [navigate]);
 

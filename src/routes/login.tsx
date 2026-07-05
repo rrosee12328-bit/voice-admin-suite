@@ -1,9 +1,10 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import { sendPasswordResetEmail } from "@/lib/password-reset.functions";
+import { routePasswordResetIfPresent } from "@/lib/password-reset-url";
 import vektissLogo from "@/assets/vektiss-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/login")({
   beforeLoad: async () => {
+    if (typeof window !== "undefined" && routePasswordResetIfPresent(window.location)) return;
     const { data } = await supabase.auth.getSession();
     if (data.session) throw redirect({ to: "/dashboard" });
   },
@@ -24,6 +26,10 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+
+  useEffect(() => {
+    routePasswordResetIfPresent(window.location);
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
