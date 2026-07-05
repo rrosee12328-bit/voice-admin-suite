@@ -1,6 +1,7 @@
 // Render intake form answers as Markdown and PDF.
 import { INTAKE_SECTIONS, type Question } from "./intake-questions";
 import { FORECLOSURE_INTAKE_SECTIONS } from "./intake-questions-foreclosure";
+import { MEDSPA_INTAKE_SECTIONS } from "./intake-questions-medspa";
 
 export type IntakeRow = {
   id: string;
@@ -18,6 +19,7 @@ export type IntakeRow = {
 
 function getSections(row: IntakeRow) {
   if (row.form_type === "foreclosure_law") return FORECLOSURE_INTAKE_SECTIONS;
+  if (row.form_type === "medspa") return MEDSPA_INTAKE_SECTIONS;
   return INTAKE_SECTIONS;
 }
 

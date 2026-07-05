@@ -58,7 +58,7 @@ function IntakeListPage() {
     contact_phone: "",
     website: "",
     services: "",
-    form_type: "auto_repair" as "auto_repair" | "foreclosure_law" | "vektiss_lead",
+    form_type: "auto_repair" as "auto_repair" | "foreclosure_law" | "vektiss_lead" | "medspa",
   });
 
   const createMutation = useMutation({
@@ -80,7 +80,7 @@ function IntakeListPage() {
     onSuccess: (token) => {
       const url = `${window.location.origin}/intake/${token}`;
       setCreatedLink(url);
-      setForm({ business_name: "", contact_phone: "", website: "", services: "", form_type: "auto_repair" as "auto_repair" | "foreclosure_law" | "vektiss_lead" });
+      setForm({ business_name: "", contact_phone: "", website: "", services: "", form_type: "auto_repair" as "auto_repair" | "foreclosure_law" | "vektiss_lead" | "medspa" });
       qc.invalidateQueries({ queryKey: ["admin-intakes"] });
       toast.success("Intake link created");
     },
@@ -126,11 +126,12 @@ function IntakeListPage() {
                       id="ft"
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                       value={form.form_type}
-                      onChange={(e) => setForm({ ...form, form_type: e.target.value as "auto_repair" | "foreclosure_law" | "vektiss_lead" })}
+                      onChange={(e) => setForm({ ...form, form_type: e.target.value as "auto_repair" | "foreclosure_law" | "vektiss_lead" | "medspa" })}
                     >
                       <option value="auto_repair">Auto Repair Shop</option>
                       <option value="foreclosure_law">Foreclosure / Probate Law Office</option>
                       <option value="vektiss_lead">Vektiss Voice — Lead Capture</option>
+                      <option value="medspa">Med Spa / Health &amp; Wellness Clinic</option>
                     </select>
                   </div>
                   <div className="space-y-2">
