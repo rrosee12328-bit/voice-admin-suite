@@ -61,7 +61,7 @@ const PLANS: PlanDef[] = [
     id: "ai_front_office",
     name: "AI Front Office",
     icon: Mail,
-    price: "$199",
+    price: "$500",
     priceSuffix: "/mo",
     tagline: "Your full virtual receptionist.",
     bestFor: "Growing teams (100+ calls/mo)",
@@ -221,7 +221,7 @@ function PricingPage() {
         </div>
 
         <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-muted-foreground">
-          * A one-time $500 setup fee applies to all plans. We build, configure, and test your
+          * A one-time $1,500 setup fee applies to all plans. We build, configure, and test your
           custom AI agent — you don't touch any technology.
         </p>
       </div>

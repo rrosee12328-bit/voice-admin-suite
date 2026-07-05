@@ -68,7 +68,7 @@ const PLANS: PlanDef[] = [
     id: "ai_front_office",
     name: "AI Front Office",
     icon: Mail,
-    price: "$199",
+    price: "$500",
     priceSuffix: "/mo",
     tagline: "Your full virtual receptionist.",
     bestFor: "Growing teams (100+ calls/mo)",
@@ -293,7 +293,7 @@ function GetStartedPage() {
           </p>
           <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            $500 one-time setup fee — done-for-you onboarding
+            $1,500 one-time setup fee — done-for-you onboarding
           </div>
         </div>
 

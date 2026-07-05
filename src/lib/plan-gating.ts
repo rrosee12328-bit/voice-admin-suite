@@ -46,7 +46,7 @@ export const PLAN_LABEL: Record<Plan, string> = {
 export const PLAN_PRICE: Record<Plan, number> = {
   phone_starter: 45.99,
   phone_email: 89.99,
-  ai_front_office: 199,
+  ai_front_office: 500,
   custom: 0, // custom = quoted
 };
 

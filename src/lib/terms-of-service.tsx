@@ -64,7 +64,7 @@ export function TermsOfServiceContent() {
 
       <h2>5. Onboarding &amp; Setup</h2>
       <h3>5.1 Setup Fee</h3>
-      <p>A one-time, <strong>non-refundable setup fee of $500</strong> is charged at the time of signup. This fee covers: custom AI agent configuration and training on your business information; integration with your phone system; quality assurance testing prior to launch; and initial onboarding support. The setup fee applies to all standard plans. Custom enterprise plans may have a different setup fee as specified in the custom agreement.</p>
+      <p>A one-time, <strong>non-refundable setup fee of $1,500</strong> is charged at the time of signup. This fee covers: custom AI agent configuration and training on your business information; integration with your phone system; quality assurance testing prior to launch; and initial onboarding support. The setup fee applies to all standard plans. Custom enterprise plans may have a different setup fee as specified in the custom agreement.</p>
       <h3>5.2 Setup Timeline</h3>
       <p>Vektiss will use commercially reasonable efforts to complete your AI agent setup within <strong>3–5 business days</strong> of receiving your completed intake form and payment. Complex configurations may require additional time, and Vektiss will communicate any delays promptly.</p>
       <h3>5.3 Client Cooperation</h3>
@@ -93,7 +93,7 @@ export function TermsOfServiceContent() {
         </thead>
         <tbody>
           <tr><td>Phone Starter</td><td>$45.99/mo</td><td>60 phone minutes / mo</td></tr>
-          <tr><td>AI Front Office</td><td>$199/mo</td><td>500 minutes + 500 emails / mo</td></tr>
+          <tr><td>AI Front Office</td><td>$500/mo</td><td>500 minutes + 500 emails / mo</td></tr>
           <tr><td>Custom</td><td>Quoted individually</td><td>Unlimited volume</td></tr>
         </tbody>
       </table>
@@ -146,7 +146,7 @@ export function TermsOfServiceContent() {
       <p>Vektiss offers a <strong>30-day satisfaction guarantee</strong> on your first month's subscription fee (or the monthly equivalent for annual subscribers), measured from the date your AI agent goes live. If you are not satisfied with the service within this period, contact us at info@vektiss.com and we will issue a refund of the first month's subscription fee.</p>
       <p>The following are excluded from the money-back guarantee:</p>
       <ul>
-        <li>The one-time $500 setup fee (non-refundable under all circumstances).</li>
+        <li>The one-time $1,500 setup fee (non-refundable under all circumstances).</li>
         <li>Overage charges incurred during the guarantee period.</li>
         <li>Subscription fees for any month after the first 30 days of service.</li>
         <li>The remaining balance of an annual subscription after the first 30 days.</li>
