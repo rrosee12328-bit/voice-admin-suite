@@ -20,6 +20,91 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
+function bytesToBase64Url(bytes: Uint8Array) {
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function stringToBase64Url(value: string) {
+  return bytesToBase64Url(new TextEncoder().encode(value));
+}
+
+function base64UrlToString(value: string) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+async function sign(value: string, secret: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
+  return bytesToBase64Url(new Uint8Array(signature));
+}
+
+function timingSafeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+async function createResetToken(args: { email: string; userId: string; serviceKey: string }) {
+  const payload = stringToBase64Url(
+    JSON.stringify({
+      email: args.email,
+      userId: args.userId,
+      exp: Date.now() + 30 * 60 * 1000,
+    }),
+  );
+  const signature = await sign(payload, args.serviceKey);
+  return `${payload}.${signature}`;
+}
+
+async function verifyResetToken(token: string, serviceKey: string) {
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) throw new Error("Invalid password reset token.");
+
+  const expected = await sign(payload, serviceKey);
+  if (!timingSafeEqual(signature, expected)) throw new Error("Invalid password reset token.");
+
+  const parsed = JSON.parse(base64UrlToString(payload)) as {
+    email?: string;
+    userId?: string;
+    exp?: number;
+  };
+  if (!parsed.email || !parsed.userId || !parsed.exp) throw new Error("Invalid password reset token.");
+  if (Date.now() > parsed.exp) throw new Error("This password reset link has expired.");
+
+  return { email: parsed.email, userId: parsed.userId };
+}
+
+async function findAuthUserByEmail(baseUrl: string, serviceKey: string, email: string) {
+  const res = await fetch(`${baseUrl}/auth/v1/admin/users?page=1&per_page=1000`, {
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Could not look up account (${res.status}): ${body.slice(0, 300)}`);
+  }
+  const json = (await res.json()) as { users?: Array<{ id?: string; email?: string | null }> };
+  return json.users?.find((user) => user.id && user.email?.toLowerCase() === email.toLowerCase()) ?? null;
+}
+
 export async function deliverPasswordResetEmail(args: { email: string; redirectTo: string }) {
   const { baseUrl, serviceKey } = vektissEnv();
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
@@ -29,36 +114,17 @@ export async function deliverPasswordResetEmail(args: { email: string; redirectT
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
   if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not configured");
 
-  const linkRes = await fetch(`${baseUrl}/auth/v1/admin/generate_link`, {
-    method: "POST",
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      type: "recovery",
-      email: args.email,
-      options: { redirect_to: args.redirectTo },
-    }),
+  const user = await findAuthUserByEmail(baseUrl, serviceKey, args.email);
+  if (!user?.id || !user.email) throw new Error("No Vektiss account found for that email.");
+
+  const resetToken = await createResetToken({
+    email: user.email,
+    userId: user.id,
+    serviceKey,
   });
 
-  if (!linkRes.ok) {
-    const body = await linkRes.text().catch(() => "");
-    throw new Error(`Could not create reset link (${linkRes.status}): ${body.slice(0, 300)}`);
-  }
-
-  const linkBody = (await linkRes.json()) as {
-    action_link?: string;
-    hashed_token?: string;
-    properties?: { hashed_token?: string };
-  };
-  const tokenHash = linkBody.properties?.hashed_token || linkBody.hashed_token;
-  if (!tokenHash) throw new Error("Supabase did not return a reset token.");
-
   const resetUrl = new URL(args.redirectTo);
-  resetUrl.searchParams.set("token_hash", tokenHash);
-  resetUrl.searchParams.set("type", "recovery");
+  resetUrl.searchParams.set("reset_token", resetToken);
 
   const from = process.env.RESEND_FROM || "Vektiss Support <support@support.vektiss.com>";
   const subject = "Reset your Vektiss Voice password";
@@ -116,4 +182,27 @@ export async function deliverPasswordResetEmail(args: { email: string; redirectT
   }
 
   return { ok: true as const };
+}
+
+export async function updatePasswordWithResetToken(args: { resetToken: string; password: string }) {
+  const { baseUrl, serviceKey } = vektissEnv();
+  if (!serviceKey) throw new Error("VEKTISS_SUPABASE_SERVICE_ROLE_KEY is not configured");
+
+  const verified = await verifyResetToken(args.resetToken, serviceKey);
+  const authRes = await fetch(`${baseUrl}/auth/v1/admin/users/${verified.userId}`, {
+    method: "PUT",
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password: args.password, email_confirm: true }),
+  });
+
+  if (!authRes.ok) {
+    const body = await authRes.text().catch(() => "");
+    throw new Error(`Password update failed (${authRes.status}): ${body.slice(0, 300)}`);
+  }
+
+  return { ok: true as const, email: verified.email };
 }

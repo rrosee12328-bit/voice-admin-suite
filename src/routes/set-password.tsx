@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
+import { setPasswordWithResetToken } from "@/lib/password-reset.functions";
 import vektissLogo from "@/assets/vektiss-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ function SetPasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetToken, setResetToken] = useState("");
 
   // Reset links can arrive as a token_hash query, a PKCE code query, or the
   // older access-token hash. Turn any of those into a session before showing
@@ -32,9 +34,19 @@ function SetPasswordPage() {
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const tokenHash = params.get("token_hash");
       const code = params.get("code");
+      const vektissResetToken = params.get("reset_token");
       const accessToken = params.get("access_token") || hashParams.get("access_token");
       const refreshToken = params.get("refresh_token") || hashParams.get("refresh_token");
       const type = params.get("type") === "invite" ? "invite" : "recovery";
+
+      if (vektissResetToken) {
+        if (cancelled) return;
+        setResetToken(vektissResetToken);
+        setHasSession(true);
+        setReady(true);
+        window.history.replaceState(null, "", window.location.pathname);
+        return;
+      }
 
       if (tokenHash) {
         const { data, error } = await supabase.auth.verifyOtp({
@@ -110,6 +122,30 @@ function SetPasswordPage() {
       return;
     }
     setLoading(true);
+    if (resetToken) {
+      try {
+        const result = await setPasswordWithResetToken({
+          data: { resetToken, password },
+        });
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: result.email,
+          password,
+        });
+        if (signInError) {
+          toast.success("Password set. Please sign in with your new password.");
+          navigate({ to: "/login" });
+          return;
+        }
+        toast.success("Password set! Welcome to Vektiss.");
+        navigate({ to: "/dashboard" });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to set password.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {

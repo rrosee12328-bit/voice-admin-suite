@@ -1,4 +1,4 @@
-const RESET_KEYS = ["token_hash", "code", "access_token", "refresh_token"];
+const RESET_KEYS = ["reset_token", "token_hash", "code", "access_token", "refresh_token"];
 
 export function getPasswordResetUrl(location: Location) {
   const search = new URLSearchParams(location.search);
