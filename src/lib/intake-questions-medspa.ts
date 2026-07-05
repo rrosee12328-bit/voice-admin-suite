@@ -23,6 +23,8 @@ export const MEDSPA_INTAKE_SECTIONS: Section[] = [
       { id: "provider_names", label: "Provider / staff names the AI should know (e.g., Dr. Smith, Nurse Tanya)", type: "textarea" },
       { id: "direct_email", label: "Email address for appointment requests or inquiries", type: "text" },
       { id: "online_booking", label: "Do you use an online booking system? If yes, what platform and link?", type: "textarea" },
+      { id: "call_volume", label: "Approximately how many calls do you receive per month (or per day)?", help: "e.g., 50 calls/month, 10–15 calls/day", type: "text" },
+      { id: "call_duration", label: "How long are your calls typically?", type: "multiselect", options: ["Under 2 minutes", "2–5 minutes", "5–10 minutes", "10+ minutes", "It varies"] },
     ],
   },
   {

@@ -44,6 +44,18 @@ export const VEKTISS_LEAD_SECTIONS: Section[] = [
         help: "Tell us a little about what you need — we'll come prepared.",
         type: "textarea",
       },
+      {
+        id: "call_volume",
+        label: "Approximately how many calls do you receive per month (or per day)?",
+        help: "e.g., 50 calls/month, 10-15 calls/day",
+        type: "text",
+      },
+      {
+        id: "call_duration",
+        label: "How long are your calls typically?",
+        type: "multiselect",
+        options: ["Under 2 minutes", "2-5 minutes", "5-10 minutes", "10+ minutes", "It varies"],
+      },
     ],
   },
 ];

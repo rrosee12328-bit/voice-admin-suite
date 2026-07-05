@@ -39,16 +39,28 @@ export function canUse(plan: Plan | null | undefined, feature: Feature): boolean
 export const PLAN_LABEL: Record<Plan, string> = {
   phone_starter: "Phone Starter",
   phone_email: "Phone + Email",
-  ai_front_office: "AI Front Office",
-  custom: "Custom",
+  ai_front_office: "Vektiss Voice Essentials", // ai_front_office = Essentials ($500/mo)
+  custom: "Enterprise / Custom",
 };
 
 export const PLAN_PRICE: Record<Plan, number> = {
   phone_starter: 45.99,
   phone_email: 89.99,
-  ai_front_office: 500,
-  custom: 0, // custom = quoted
+  ai_front_office: 500, // Essentials: $500/mo + $1,500 setup
+  custom: 0, // Enterprise = quoted
 };
+
+// Setup fees (one-time, charged before monthly billing starts)
+export const PLAN_SETUP_FEE: Record<Plan, number> = {
+  phone_starter: 0,
+  phone_email: 0,
+  ai_front_office: 1500, // Essentials setup fee
+  custom: 0, // quoted
+};
+
+// Growth plan is not in the Plan enum (handled separately via Calendly)
+export const GROWTH_MONTHLY_PRICE = 1000;
+export const GROWTH_SETUP_FEE = 3000;
 
 export function requiredPlanFor(feature: Feature): Plan {
   return FEATURE_MIN[feature];

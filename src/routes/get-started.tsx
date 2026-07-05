@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useCallback, useEffect } from "react";
-import { Check, Loader2, Phone, Mail, Sparkles, Plus } from "lucide-react";
+import { Check, Loader2, Zap, TrendingUp, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client-untyped";
@@ -23,91 +23,86 @@ export const Route = createFileRoute("/get-started")({
   component: GetStartedPage,
 });
 
-type PlanId = "phone_starter" | "ai_front_office" | "custom";
+type PlanId = "essentials" | "growth" | "custom";
 
 type PlanDef = {
   id: PlanId;
   name: string;
+  badge?: string;
   icon: LucideIcon;
   price: string;
   priceSuffix?: string;
-  tagline?: string;
-  bestFor?: string;
-  allowance?: string;
-  featuresHeader?: string;
-  featuresSubHeader?: string;
+  setupFee?: string;
+  tagline: string;
+  bestFor: string;
   features: string[];
-  overage?: string;
   popular?: boolean;
+  externalCta?: boolean;
+  ctaHref?: string;
 };
 
 const PLANS: PlanDef[] = [
   {
-    id: "phone_starter",
-    name: "Phone Starter",
-    icon: Phone,
-    price: "$45.99",
-    priceSuffix: "/mo",
-    tagline: "Never miss another call.",
-    bestFor: "Solo operators",
-    allowance: "60 phone minutes / mo",
-    featuresHeader: "What's included",
-    features: [
-      "24/7 AI receptionist",
-      "Smart call routing",
-      "After-hours handling",
-      "Spam blocking",
-      "Call recordings + summaries",
-      "Email alerts after every call",
-      "Done-for-you setup",
-      "30-day money-back",
-    ],
-    overage: "$0.25 / extra minute",
-  },
-  {
-    id: "ai_front_office",
-    name: "AI Front Office",
-    icon: Mail,
+    id: "essentials",
+    name: "Essentials",
+    badge: "Limited Time",
+    icon: Zap,
     price: "$500",
     priceSuffix: "/mo",
-    tagline: "Your full virtual receptionist.",
-    bestFor: "Growing teams (100+ calls/mo)",
-    allowance: "500 minutes + 500 emails / mo",
-    featuresHeader: "Everything in Phone Starter",
-    featuresSubHeader: "Plus",
+    setupFee: "+ $1,500 one-time setup fee",
+    tagline: "Your AI receptionist, done for you in 48–72 hours.",
+    bestFor: "Small businesses with moderate call volume",
     features: [
-      "Intake form delivery",
-      "Email AI assistant",
-      "Analytics dashboard",
+      "24/7 AI voice receptionist",
+      "Done-for-you setup & configuration",
+      "Smart call routing & after-hours handling",
+      "Call recordings + summaries",
+      "Email alerts after every call",
       "Full call transcripts",
-      "Monthly performance report",
-      "Lead scoring (Hot / Warm / Cold)",
-      "Calendar sync (Google + Outlook)",
+      "Analytics dashboard",
       "Bilingual support (EN / ES)",
-      "Auto follow-up emails",
-      "Caller memory",
-      "Priority support",
+      "SMS follow-up with booking link",
+      "30-day money-back guarantee",
     ],
-    overage: "$0.15 / min · $0.03 / email",
     popular: true,
   },
   {
-    id: "custom",
-    name: "Custom",
-    icon: Sparkles,
-    price: "Let's Talk",
-    tagline: "Built around your workflow.",
-    bestFor: "Multi-location & enterprise",
-    allowance: "Unlimited volume",
-    featuresHeader: "Everything in AI Front Office",
-    featuresSubHeader: "Plus",
+    id: "growth",
+    name: "Growth",
+    icon: TrendingUp,
+    price: "$1,000",
+    priceSuffix: "/mo",
+    setupFee: "+ $3,000 one-time setup fee",
+    tagline: "High-volume AI with custom integrations.",
+    bestFor: "Growing businesses with high call volume or custom needs",
     features: [
-      "Custom CRM integrations",
-      "Multi-location support",
-      "Outbound AI calling",
+      "Everything in Essentials",
+      "Up to ~2,000 minutes / month",
+      "Custom CRM or software integrations",
+      "Multi-location or multi-agent support",
+      "Advanced lead scoring",
       "Dedicated account manager",
+      "Priority support",
     ],
-    overage: "Volume-based pricing",
+    externalCta: true,
+    ctaHref: "https://calendly.com/vektiss-info/30-minute-vektiss-discovery",
+  },
+  {
+    id: "custom",
+    name: "Enterprise",
+    icon: Sparkles,
+    price: "Custom",
+    tagline: "Unlimited volume, white-label, and enterprise SLAs.",
+    bestFor: "Multi-location chains, franchises & enterprise",
+    features: [
+      "Everything in Growth",
+      "Unlimited call volume",
+      "White-label option",
+      "Custom SLA guarantees",
+      "Dedicated build team",
+    ],
+    externalCta: true,
+    ctaHref: "https://calendly.com/vektiss-info/30-minute-vektiss-discovery",
   },
 ];
 
@@ -140,7 +135,7 @@ function formatPhoneInput(value: string): string {
 }
 
 function GetStartedPage() {
-  const [selected, setSelected] = useState<PlanId>("ai_front_office");
+  const [selected, setSelected] = useState<PlanId>("essentials");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -216,7 +211,7 @@ function GetStartedPage() {
 
     setSubmitting(true);
     try {
-      // Always create a draft intake record (including for Custom plan).
+      // Always create a draft intake record
       const { data, error } = await supabase
         .from("intake_forms")
         .insert({
@@ -240,8 +235,9 @@ function GetStartedPage() {
       if (error) throw error;
       const token = data!.token as string;
 
-      if (selected === "custom") {
-        const url = `https://calendly.com/vektiss-info/30-minute-vektiss-discovery?name=${encodeURIComponent(
+      const selectedPlan = PLANS.find((p) => p.id === selected);
+      if (selectedPlan?.externalCta && selectedPlan.ctaHref) {
+        const url = `${selectedPlan.ctaHref}?name=${encodeURIComponent(
           contactName,
         )}&email=${encodeURIComponent(email)}`;
         window.location.href = url;
@@ -254,7 +250,7 @@ function GetStartedPage() {
           recipientEmail: email,
           businessName,
           firstName,
-          plan: selected,
+          plan: "ai_front_office", // maps to essentials in backend
           intakeUrl: link,
         },
       });
@@ -268,6 +264,7 @@ function GetStartedPage() {
     }
   };
 
+  const selectedPlan = PLANS.find((p) => p.id === selected);
 
   return (
     <div className="bg-grid min-h-screen text-foreground">
@@ -293,7 +290,7 @@ function GetStartedPage() {
           </p>
           <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            $1,500 one-time setup fee — done-for-you onboarding
+            Setup fee charged first — monthly billing starts when you go live
           </div>
         </div>
 
@@ -327,10 +324,9 @@ function GetStartedPage() {
                           : "border-border hover:border-primary/40",
                     )}
                   >
-                    {plan.popular && (
+                    {plan.badge && (
                       <div className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-primary/30 bg-accent px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary shadow-sm">
-                        <Plus className="h-3 w-3" />
-                        Most Popular
+                        {plan.badge}
                       </div>
                     )}
                     {isSelected && (
@@ -345,53 +341,34 @@ function GetStartedPage() {
                       </div>
                       <h3 className="text-lg font-semibold">{plan.name}</h3>
                     </div>
-                    {plan.tagline && (
-                      <p className="mt-3 text-sm text-muted-foreground">{plan.tagline}</p>
-                    )}
+                    <p className="mt-3 text-sm text-muted-foreground">{plan.tagline}</p>
 
-                    <div className="mt-5 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
-                      {plan.priceSuffix && (
-                        <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
+                    <div className="mt-5">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
+                        {plan.priceSuffix && (
+                          <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
+                        )}
+                      </div>
+                      {plan.setupFee && (
+                        <p className="mt-1 text-xs text-muted-foreground">{plan.setupFee}</p>
                       )}
                     </div>
 
                     <div className="my-6 border-t border-border" />
 
-                    {plan.allowance && (
-                      <div className="rounded-xl border border-primary/15 bg-primary/10 p-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Includes
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-foreground">
-                          {plan.allowance}
-                        </p>
-                      </div>
-                    )}
-
-                    {plan.bestFor && (
-                      <div className="mt-3 rounded-xl border border-primary/15 bg-primary/10 p-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Best for
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-foreground">
-                          {plan.bestFor}
-                        </p>
-                      </div>
-                    )}
+                    <div className="rounded-xl border border-primary/15 bg-primary/10 p-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Best for
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {plan.bestFor}
+                      </p>
+                    </div>
 
                     <div className="mt-6 flex-1">
-                      {plan.featuresHeader && (
-                        <p className="text-sm font-semibold text-foreground">
-                          {plan.featuresHeader}
-                        </p>
-                      )}
-                      {plan.featuresSubHeader && (
-                        <p className="mt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          {plan.featuresSubHeader}
-                        </p>
-                      )}
-                      <ul className={cn("space-y-2.5", plan.featuresSubHeader ? "mt-2" : "mt-3")}>
+                      <p className="text-sm font-semibold text-foreground">What's included</p>
+                      <ul className="mt-3 space-y-2.5">
                         {plan.features.map((f) => (
                           <li key={f} className="flex items-start gap-2 text-sm">
                             <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -400,12 +377,6 @@ function GetStartedPage() {
                         ))}
                       </ul>
                     </div>
-
-                    {plan.overage && (
-                      <p className="mt-6 border-t border-border pt-4 text-xs font-medium text-muted-foreground">
-                        {plan.overage}
-                      </p>
-                    )}
                   </button>
                 );
               })}
@@ -417,7 +388,7 @@ function GetStartedPage() {
             >
               <h2 className="text-lg font-semibold">Your details</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {selected === "custom"
+                {selectedPlan?.externalCta
                   ? "We'll take you to book a discovery call."
                   : "We'll email your setup link to this address."}
               </p>
@@ -542,8 +513,8 @@ function GetStartedPage() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Sending…
                   </>
-                ) : selected === "custom" ? (
-                  "Book a Call"
+                ) : selectedPlan?.externalCta ? (
+                  "Book a Discovery Call"
                 ) : (
                   "Get Started"
                 )}
