@@ -21,13 +21,41 @@ function SetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Supabase puts #access_token=...&type=invite|recovery in the URL hash.
-  // The browser client auto-detects it and creates a session.
+  // Reset links can arrive as a token_hash query, a PKCE code query, or the
+  // older access-token hash. Turn any of those into a session before showing
+  // the password form.
   useEffect(() => {
     let cancelled = false;
 
     const init = async () => {
-      // Give detectSessionInUrl a tick to process the hash.
+      const params = new URLSearchParams(window.location.search);
+      const tokenHash = params.get("token_hash");
+      const code = params.get("code");
+      const type = params.get("type") === "invite" ? "invite" : "recovery";
+
+      if (tokenHash) {
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type,
+        });
+        if (error) toast.error(error.message);
+        if (cancelled) return;
+        setHasSession(!!data.session);
+        setReady(true);
+        window.history.replaceState(null, "", window.location.pathname);
+        return;
+      }
+
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) toast.error(error.message);
+        if (cancelled) return;
+        setHasSession(!!data.session);
+        setReady(true);
+        window.history.replaceState(null, "", window.location.pathname);
+        return;
+      }
+
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
       setHasSession(!!data.session);
@@ -92,7 +120,7 @@ function SetPasswordPage() {
           <div className="mt-8 h-24 animate-pulse rounded-md bg-muted" />
         ) : !hasSession ? (
           <div className="mt-6 rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-            This invitation link is invalid or has expired. Please contact{" "}
+            This password reset link is invalid or has expired. Please contact{" "}
             <a
               href="mailto:info@vektiss.com"
               className="font-medium text-foreground underline-offset-2 hover:underline"

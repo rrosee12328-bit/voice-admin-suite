@@ -48,14 +48,22 @@ export async function deliverPasswordResetEmail(args: { email: string; redirectT
     throw new Error(`Could not create reset link (${linkRes.status}): ${body.slice(0, 300)}`);
   }
 
-  const linkBody = (await linkRes.json()) as { action_link?: string };
-  const resetUrl = linkBody.action_link;
-  if (!resetUrl) throw new Error("Supabase did not return a reset link.");
+  const linkBody = (await linkRes.json()) as {
+    action_link?: string;
+    hashed_token?: string;
+    properties?: { hashed_token?: string };
+  };
+  const tokenHash = linkBody.properties?.hashed_token || linkBody.hashed_token;
+  if (!tokenHash) throw new Error("Supabase did not return a reset token.");
+
+  const resetUrl = new URL(args.redirectTo);
+  resetUrl.searchParams.set("token_hash", tokenHash);
+  resetUrl.searchParams.set("type", "recovery");
 
   const from = process.env.RESEND_FROM || "Vektiss Support <support@support.vektiss.com>";
   const subject = "Reset your Vektiss Voice password";
   const safeEmail = escapeHtml(args.email);
-  const safeResetUrl = escapeHtml(resetUrl);
+  const safeResetUrl = escapeHtml(resetUrl.toString());
   const html = `
 <!doctype html>
 <html>
