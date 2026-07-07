@@ -2,10 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { SUPABASE_URL, requireSupabasePublishableKey } from './config';
 
+function getAuthStorage() {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 function createSupabaseClient() {
   return createClient<Database>(SUPABASE_URL, requireSupabasePublishableKey(), {
     auth: {
-      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      storage: getAuthStorage(),
       persistSession: true,
       autoRefreshToken: true,
     }

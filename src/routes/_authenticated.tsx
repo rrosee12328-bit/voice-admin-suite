@@ -21,46 +21,61 @@ function AuthenticatedLayout() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        if (!cancelled) {
-          setChecked(true);
-          navigate({ to: "/login" });
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        let session = sessionData.session;
+        if (!session) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          session = refreshed.session;
         }
-        return;
-      }
-      const user = userData.user;
-      const { data: profile, error: profErr } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle<Profile>();
-      if (profErr) {
-        if (!cancelled) {
-          setErr(profErr.message);
-          setChecked(true);
+
+        if (!session?.user) {
+          if (!cancelled) {
+            setChecked(true);
+            navigate({ to: "/login" });
+          }
+          return;
         }
-        return;
-      }
-      if (!profile) {
-        if (!cancelled) {
-          setErr("No profile found for this account. Contact your administrator.");
-          setChecked(true);
-        }
-        return;
-      }
-      let tenant: Tenant | null = null;
-      if (profile.tenant_id) {
-        const { data: t } = await supabase
-          .from("tenants")
+
+        const { data: userData } = await supabase.auth.getUser(session.access_token);
+        const user = userData.user ?? session.user;
+        const { data: profile, error: profErr } = await supabase
+          .from("profiles")
           .select("*")
-          .eq("id", profile.tenant_id)
-          .maybeSingle<Tenant>();
-        tenant = t ?? null;
-      }
-      if (!cancelled) {
-        setMe({ userId: user.id, email: user.email ?? "", profile, tenant });
-        setChecked(true);
+          .eq("id", user.id)
+          .maybeSingle<Profile>();
+        if (profErr) {
+          if (!cancelled) {
+            setErr(profErr.message);
+            setChecked(true);
+          }
+          return;
+        }
+        if (!profile) {
+          if (!cancelled) {
+            setErr("No profile found for this account. Contact your administrator.");
+            setChecked(true);
+          }
+          return;
+        }
+        let tenant: Tenant | null = null;
+        if (profile.tenant_id) {
+          const { data: t } = await supabase
+            .from("tenants")
+            .select("*")
+            .eq("id", profile.tenant_id)
+            .maybeSingle<Tenant>();
+          tenant = t ?? null;
+        }
+        if (!cancelled) {
+          setMe({ userId: user.id, email: user.email ?? "", profile, tenant });
+          setChecked(true);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setErr(error instanceof Error ? error.message : "Unable to load your workspace.");
+          setChecked(true);
+        }
       }
     })();
     return () => {
