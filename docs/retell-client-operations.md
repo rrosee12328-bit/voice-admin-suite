@@ -47,6 +47,23 @@ The webhook assigns a call to a tenant in this order:
 
 Best practice: add the tenant ID to Retell metadata or dynamic variables when possible, and also keep agent IDs and phone numbers populated in Supabase. That gives the webhook more than one way to route the call correctly.
 
+## Retell API Deprecation Checks
+
+Retell warning emails about deprecated API usage are about outbound API calls made from a client, script, automation, or older deployed app into Retell. The Vektiss Voice dashboard should receive live call data through Retell webhooks; it should not need to poll Retell list endpoints to keep calls updated.
+
+If Retell sends an action-required deprecation email, search every active codebase, Lovable action, automation, and Retell workspace helper for these replacements:
+
+| Deprecated usage | Use instead |
+| --- | --- |
+| `GET /list-phone-numbers` | `GET /v2/list-phone-numbers` |
+| `POST /v2/list-calls` | `POST /v3/list-calls` |
+| `PATCH /update-phone-number/:phone_number` with `inbound_agent_id` | `PATCH /update-phone-number/:phone_number` with `inbound_agents: [{ agent_id, agent_version, weight: 1 }]` |
+| `POST /publish-agent/:agent_id` | `POST /publish-agent-version/:agent_id` |
+
+For all versioned list endpoints, read results from the `items` array and keep paging with `pagination_key` and `has_more`.
+
+The active source in this repository is webhook-based and should not call those deprecated Retell endpoints. If Retell continues sending these warnings after this repo is clean, the remaining caller is likely an older Lovable deployment, a separate script, a Retell dashboard action, or another project connected to the same Retell organization.
+
 ## Email Notification Rules
 
 Post-call emails are sent only after the call is ready, not at `call_started`.
