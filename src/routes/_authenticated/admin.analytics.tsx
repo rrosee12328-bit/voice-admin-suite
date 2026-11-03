@@ -1,19 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Users,
-  Phone,
-  DollarSign,
-  Calendar,
-  Activity,
-  Clock,
-  TrendingUp,
-  ArrowUpRight,
-} from "lucide-react";
+import { Users, Phone, Calendar, Activity, Clock, ArrowUpRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Tenant, Call } from "@/integrations/supabase/app-types";
-import { PLAN_PRICE, PLAN_LABEL } from "@/lib/plan-gating";
 import { PlanBadge } from "@/components/badges";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { cn } from "@/lib/utils";
@@ -25,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/admin/analytics")({
   head: () => ({
     meta: [
       { title: "Platform Analytics — Vektiss Voice" },
-      { name: "description", content: "Platform-wide usage and revenue analytics" },
+      { name: "description", content: "Platform-wide call and usage analytics" },
     ],
   }),
   component: PlatformAnalytics,
@@ -111,7 +101,6 @@ function PlatformAnalytics() {
   const activeClients = tenants.filter(
     (t) => t.agent_status === "live" || t.agent_status === "active",
   ).length;
-  const mrr = tenants.reduce((sum, t) => sum + (PLAN_PRICE[t.plan] || 0), 0);
 
   const tenantById: Record<string, Tenant> = {};
   for (const t of tenants) tenantById[t.id] = t;
@@ -126,12 +115,6 @@ function PlatformAnalytics() {
   const totalMinutes = secondsToBillableMinutes(
     Object.values(perTenant).reduce((s, t) => s + t.seconds, 0),
   );
-
-  const planBreakdown = tenants.reduce<Record<string, number>>((acc, t) => {
-    const k = t.plan || "unknown";
-    acc[k] = (acc[k] || 0) + 1;
-    return acc;
-  }, {});
 
   const overLimitCount = tenants.filter((t) => {
     const used = secondsToBillableMinutes(perTenant[t.id]?.seconds ?? 0);
@@ -181,33 +164,9 @@ function PlatformAnalytics() {
         </div>
       )}
 
-      {/* BENTO GRID */}
-      <section className="grid auto-rows-[minmax(0,_1fr)] grid-cols-12 gap-4">
-        {/* Hero: MRR */}
+      <section className="grid grid-cols-12 gap-4">
         <KpiTile
-          className="col-span-12 sm:col-span-6 lg:col-span-5 lg:row-span-2"
-          label="Listed plan value estimate"
-          icon={<DollarSign className="h-4 w-4" />}
-          tone="primary"
-          large
-        >
-          <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-semibold tracking-tight tabular-nums">
-              {tenantsQ.isLoading ? "…" : `$${mrr.toLocaleString()}`}
-            </span>
-            <span className="text-sm text-muted-foreground">/mo</span>
-          </div>
-          <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-success">
-              <TrendingUp className="h-3 w-3" /> live
-            </span>
-            <span>Catalog prices across {totalClients} workspaces; not collected revenue</span>
-          </div>
-          <PlanBars planBreakdown={planBreakdown} tenants={tenants} />
-        </KpiTile>
-
-        <KpiTile
-          className="col-span-6 lg:col-span-4"
+          className="col-span-6 lg:col-span-3"
           label="Total Clients"
           icon={<Users className="h-4 w-4" />}
           onClick={() =>
@@ -238,7 +197,7 @@ function PlatformAnalytics() {
         </KpiTile>
 
         <KpiTile
-          className="col-span-6 lg:col-span-4"
+          className="col-span-6 lg:col-span-3"
           label="Calls This Month"
           icon={<Phone className="h-4 w-4" />}
           onClick={() =>
@@ -443,7 +402,6 @@ function KpiTile({
   icon,
   children,
   tone = "neutral",
-  large = false,
   onClick,
 }: {
   className?: string;
@@ -451,7 +409,6 @@ function KpiTile({
   icon: React.ReactNode;
   children: React.ReactNode;
   tone?: "neutral" | "primary" | "success" | "warning" | "info";
-  large?: boolean;
   onClick?: () => void;
 }) {
   const toneStyles: Record<string, string> = {
@@ -480,7 +437,6 @@ function KpiTile({
         }
         className={cn(
           "flex h-full flex-col p-5",
-          large && "p-6",
           onClick &&
             "cursor-pointer transition-colors hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-primary",
         )}
@@ -502,54 +458,5 @@ function KpiTile({
         {onClick && <span className="mt-2 text-xs font-medium text-primary">View details ↓</span>}
       </div>
     </SpotlightCard>
-  );
-}
-
-function PlanBars({
-  planBreakdown,
-  tenants,
-}: {
-  planBreakdown: Record<string, number>;
-  tenants: Tenant[];
-}) {
-  const total = tenants.length || 1;
-  const entries = Object.entries(planBreakdown).sort((a, b) => b[1] - a[1]);
-  if (entries.length === 0) return null;
-
-  const colorFor: Record<string, string> = {
-    phone_starter: "bg-slate-badge",
-    phone_email: "bg-info",
-    ai_front_office: "bg-primary",
-    custom: "bg-warning",
-  };
-
-  return (
-    <div className="mt-6 space-y-3 border-t border-border/60 pt-4">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        Plan distribution
-      </div>
-      <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
-        {entries.map(([plan, count]) => (
-          <div
-            key={plan}
-            className={cn("h-full transition-all", colorFor[plan] || "bg-muted-foreground/40")}
-            style={{ width: `${(count / total) * 100}%` }}
-          />
-        ))}
-      </div>
-      <ul className="space-y-1.5 text-xs">
-        {entries.map(([plan, count]) => (
-          <li key={plan} className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <span
-                className={cn("h-2 w-2 rounded-full", colorFor[plan] || "bg-muted-foreground/40")}
-              />
-              {PLAN_LABEL[plan as keyof typeof PLAN_LABEL] || plan}
-            </span>
-            <span className="tabular-nums font-medium">{count}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }

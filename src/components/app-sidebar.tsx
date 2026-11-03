@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Mail,
   Megaphone,
+  DollarSign,
 } from "lucide-react";
 import {
   Sidebar,
@@ -156,6 +157,14 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin/financials")}>
+                    <Link to="/admin/financials">
+                      <DollarSign />
+                      <span>Financials</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/admin/intake")}>
                     <Link to="/admin/intake">
                       <ClipboardList />
@@ -193,9 +202,7 @@ export function AppSidebar() {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">
-              {me.profile.name || me.email}
-            </div>
+            <div className="truncate text-sm font-medium">{me.profile.name || me.email}</div>
             <div className="truncate text-xs text-muted-foreground">
               {isSuper ? "Super Admin" : PLAN_LABEL[plan]}
             </div>
