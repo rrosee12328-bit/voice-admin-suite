@@ -69,9 +69,9 @@ export function DashboardView({
   minutesIncluded?: number | null;
   plan?: string | null;
 }) {
-  const [chartRange, setChartRange] = useState<"1D" | "7D" | "14D" | "1M" | "3M" | "9M" | "1Y">(
-    "14D",
-  );
+  const [chartRange, setChartRange] = useState<
+    "1D" | "7D" | "14D" | "1M" | "3M" | "6M" | "9M" | "1Y"
+  >("14D");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
@@ -92,9 +92,11 @@ export function DashboardView({
                 ? startOfMonth(now)
                 : chartRange === "3M"
                   ? startOfMonth(subMonths(now, 2))
-                  : chartRange === "9M"
-                    ? startOfMonth(subMonths(now, 8))
-                    : startOfMonth(subMonths(now, 11));
+                  : chartRange === "6M"
+                    ? startOfMonth(subMonths(now, 5))
+                    : chartRange === "9M"
+                      ? startOfMonth(subMonths(now, 8))
+                      : startOfMonth(subMonths(now, 11));
       const since = new Date(
         Math.min(
           chartStart.getTime(),
@@ -199,20 +201,25 @@ export function DashboardView({
             ? startOfMonth(now)
             : chartRange === "3M"
               ? startOfMonth(subMonths(now, 2))
-              : chartRange === "9M"
-                ? startOfMonth(subMonths(now, 8))
-                : startOfMonth(subMonths(now, 11));
+              : chartRange === "6M"
+                ? startOfMonth(subMonths(now, 5))
+                : chartRange === "9M"
+                  ? startOfMonth(subMonths(now, 8))
+                  : startOfMonth(subMonths(now, 11));
   const chartBuckets: { date: string; calls: number; booked: number }[] = [];
-  const monthly = chartRange === "3M" || chartRange === "9M" || chartRange === "1Y";
+  const monthly =
+    chartRange === "3M" || chartRange === "6M" || chartRange === "9M" || chartRange === "1Y";
   const bucketCount =
     chartRange === "1D"
       ? 24
       : monthly
         ? chartRange === "3M"
           ? 3
-          : chartRange === "9M"
-            ? 9
-            : 12
+          : chartRange === "6M"
+            ? 6
+            : chartRange === "9M"
+              ? 9
+              : 12
         : chartRange === "7D"
           ? 7
           : chartRange === "14D"
@@ -356,7 +363,7 @@ export function DashboardView({
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-sm font-semibold">Call Volume</h2>
             <div className="flex flex-wrap gap-1" role="group" aria-label="Call volume time range">
-              {(["1D", "7D", "14D", "1M", "3M", "9M", "1Y"] as const).map((range) => (
+              {(["1D", "7D", "14D", "1M", "3M", "6M", "9M", "1Y"] as const).map((range) => (
                 <button
                   key={range}
                   type="button"
