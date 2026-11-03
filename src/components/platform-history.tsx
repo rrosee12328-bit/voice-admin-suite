@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { Fragment, useState } from "react";
 import { format, startOfMonth, subMonths } from "date-fns";
 import { CalendarCheck, Clock3, Phone, PhoneForwarded } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -33,6 +34,10 @@ function totals(calls: HistoryCall[]) {
 
 export function PlatformHistory({ tenants }: { tenants: Tenant[] }) {
   const [selectedMonth, setSelectedMonth] = useState(0);
+  const [selectedMetric, setSelectedMetric] = useState<
+    "calls" | "minutes" | "booked" | "transferred" | "newCallers" | "sms" | null
+  >(null);
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const now = new Date();
   const months = Array.from({ length: 12 }, (_, index) => startOfMonth(subMonths(now, index)));
   const firstMonth = format(months[11], "yyyy-MM");
@@ -104,10 +109,29 @@ export function PlatformHistory({ tenants }: { tenants: Tenant[] }) {
     .sort((a, b) => b.calls - a.calls);
   const year = totals(calls);
   const metrics = [
-    { label: "Calls", icon: Phone, value: selected.calls, prior: previous?.calls },
-    { label: "Minutes used", icon: Clock3, value: selected.minutes, prior: previous?.minutes },
-    { label: "Appointments", icon: CalendarCheck, value: selected.booked, prior: previous?.booked },
     {
+      key: "calls" as const,
+      label: "Calls",
+      icon: Phone,
+      value: selected.calls,
+      prior: previous?.calls,
+    },
+    {
+      key: "minutes" as const,
+      label: "Minutes used",
+      icon: Clock3,
+      value: selected.minutes,
+      prior: previous?.minutes,
+    },
+    {
+      key: "booked" as const,
+      label: "Appointments",
+      icon: CalendarCheck,
+      value: selected.booked,
+      prior: previous?.booked,
+    },
+    {
+      key: "transferred" as const,
       label: "Transfers",
       icon: PhoneForwarded,
       value: selected.transferred,
@@ -116,7 +140,7 @@ export function PlatformHistory({ tenants }: { tenants: Tenant[] }) {
   ];
 
   return (
-    <div className="space-y-5">
+    <div id="platform-history" className="space-y-5">
       {(historyQ.error || lifetimeQ.error) && (
         <p
           role="alert"
@@ -127,30 +151,57 @@ export function PlatformHistory({ tenants }: { tenants: Tenant[] }) {
       )}
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <Link
+          to="/dashboard/calls"
+          search={{ tenantId: undefined }}
+          className="block rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+        >
           <p className="text-xs font-medium text-muted-foreground">Lifetime calls</p>
           <p className="mt-2 text-3xl font-semibold tabular-nums">
             {lifetimeQ.isLoading ? "…" : (lifetimeQ.data ?? 0).toLocaleString()}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">All recorded workspaces</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <p className="mt-1 text-xs text-muted-foreground">
+            All recorded workspaces · open call log →
+          </p>
+        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedMetric("calls");
+            document.getElementById("platform-monthly")?.scrollIntoView({ behavior: "smooth" });
+          }}
+          className="rounded-xl border border-border bg-card p-5 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+        >
           <p className="text-xs font-medium text-muted-foreground">Calls · last 12 months</p>
           <p className="mt-2 text-3xl font-semibold tabular-nums">
             {historyQ.isLoading ? "…" : year.calls.toLocaleString()}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Across every client</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <p className="mt-1 text-xs text-muted-foreground">
+            Across every client · view breakdown ↓
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedMetric("minutes");
+            document.getElementById("platform-monthly")?.scrollIntoView({ behavior: "smooth" });
+          }}
+          className="rounded-xl border border-border bg-card p-5 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+        >
           <p className="text-xs font-medium text-muted-foreground">Minutes · last 12 months</p>
           <p className="mt-2 text-3xl font-semibold tabular-nums">
             {historyQ.isLoading ? "…" : year.minutes.toLocaleString()}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Recorded call duration</p>
-        </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Recorded call duration · view breakdown ↓
+          </p>
+        </button>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <section
+        id="platform-monthly"
+        className="scroll-mt-5 overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-5 py-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
@@ -177,8 +228,14 @@ export function PlatformHistory({ tenants }: { tenants: Tenant[] }) {
           </label>
         </div>
         <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
-          {metrics.map(({ label, icon: Icon, value, prior }) => (
-            <div key={label} className="rounded-lg border border-border bg-background/70 p-4">
+          {metrics.map(({ key, label, icon: Icon, value, prior }) => (
+            <button
+              type="button"
+              key={key}
+              onClick={() => setSelectedMetric(selectedMetric === key ? null : key)}
+              aria-expanded={selectedMetric === key}
+              className="rounded-lg border border-border bg-background/70 p-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+            >
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Icon className="h-4 w-4 text-primary" />
                 {label}
@@ -191,24 +248,69 @@ export function PlatformHistory({ tenants }: { tenants: Tenant[] }) {
                   ? `${previous.label}: ${(prior ?? 0).toLocaleString()}`
                   : "Recorded across clients"}
               </p>
-            </div>
+              <span className="mt-2 block text-xs font-medium text-primary">View by client →</span>
+            </button>
           ))}
         </div>
+        {selectedMetric && (
+          <div className="border-t border-border bg-muted/20 px-5 py-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">
+                {selectedMetric === "newCallers"
+                  ? "New callers"
+                  : selectedMetric === "sms"
+                    ? "SMS follow-ups"
+                    : metrics.find((metric) => metric.key === selectedMetric)?.label}{" "}
+                by client · {selected.label}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedMetric(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Close
+              </button>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {[...clientRows]
+                .sort((a, b) => b[selectedMetric] - a[selectedMetric])
+                .map((row) => (
+                  <div
+                    key={row.tenant.id}
+                    className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm"
+                  >
+                    <span className="truncate pr-2">{row.tenant.name}</span>
+                    <strong className="tabular-nums">{row[selectedMetric].toLocaleString()}</strong>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
         <div className="grid gap-3 border-t border-border px-5 py-4 text-sm sm:grid-cols-2">
-          <div>
+          <button
+            type="button"
+            onClick={() => setSelectedMetric(selectedMetric === "newCallers" ? null : "newCallers")}
+            className="text-left hover:text-primary"
+          >
             <span className="text-muted-foreground">New callers</span>
             <strong className="ml-2 tabular-nums">{selected.newCallers.toLocaleString()}</strong>
-          </div>
-          <div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedMetric(selectedMetric === "sms" ? null : "sms")}
+            className="text-left hover:text-primary"
+          >
             <span className="text-muted-foreground">SMS follow-ups</span>
             <strong className="ml-2 tabular-nums">{selected.sms.toLocaleString()}</strong>
-          </div>
+          </button>
         </div>
       </section>
 
       <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
         <h2 className="text-sm font-semibold">Call and minute trend</h2>
-        <p className="mb-5 text-xs text-muted-foreground">Last 12 calendar months · all clients</p>
+        <p className="mb-5 text-xs text-muted-foreground">
+          Last 12 calendar months · select a bar to open that month
+        </p>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -231,18 +333,47 @@ export function PlatformHistory({ tenants }: { tenants: Tenant[] }) {
                   fontSize: 12,
                 }}
               />
-              <Bar dataKey="calls" fill="var(--primary)" radius={[3, 3, 0, 0]} name="Calls" />
-              <Bar dataKey="minutes" fill="var(--chart-2)" radius={[3, 3, 0, 0]} name="Minutes" />
+              <Bar
+                dataKey="calls"
+                fill="var(--primary)"
+                radius={[3, 3, 0, 0]}
+                name="Calls"
+                cursor="pointer"
+                onClick={(_data, index) => {
+                  setSelectedMonth(11 - index);
+                  setSelectedMetric("calls");
+                  document
+                    .getElementById("platform-monthly")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+              />
+              <Bar
+                dataKey="minutes"
+                fill="var(--chart-2)"
+                radius={[3, 3, 0, 0]}
+                name="Minutes"
+                cursor="pointer"
+                onClick={(_data, index) => {
+                  setSelectedMonth(11 - index);
+                  setSelectedMetric("minutes");
+                  document
+                    .getElementById("platform-monthly")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <section
+        id="platform-client-usage"
+        className="scroll-mt-5 overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+      >
         <div className="border-b border-border px-5 py-4">
           <h2 className="text-sm font-semibold">Client usage · {selected.label}</h2>
           <p className="text-xs text-muted-foreground">
-            Every workspace, including clients with zero calls.
+            Select a client to see its full monthly breakdown.
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -260,27 +391,69 @@ export function PlatformHistory({ tenants }: { tenants: Tenant[] }) {
             </thead>
             <tbody>
               {clientRows.map((row) => (
-                <tr key={row.tenant.id} className="border-t border-border/60 hover:bg-muted/20">
-                  <td className="px-5 py-3 font-medium">{row.tenant.name}</td>
-                  <td className="px-3 py-3">
-                    <PlanBadge plan={row.tenant.plan} />
-                  </td>
-                  <td className="px-3 py-3 text-right tabular-nums">
-                    {row.calls.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-3 text-right tabular-nums">
-                    {row.minutes.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-3 text-right tabular-nums">
-                    {row.booked.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-3 text-right tabular-nums">
-                    {row.transferred.toLocaleString()}
-                  </td>
-                  <td className="px-5 py-3 text-right tabular-nums">
-                    {row.newCallers.toLocaleString()}
-                  </td>
-                </tr>
+                <Fragment key={row.tenant.id}>
+                  <tr className="border-t border-border/60 hover:bg-muted/20">
+                    <td className="px-5 py-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedTenantId(
+                            selectedTenantId === row.tenant.id ? null : row.tenant.id,
+                          )
+                        }
+                        aria-expanded={selectedTenantId === row.tenant.id}
+                        className="text-left text-primary hover:underline"
+                      >
+                        {row.tenant.name} →
+                      </button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <PlanBadge plan={row.tenant.plan} />
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      {row.calls.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      {row.minutes.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      {row.booked.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      {row.transferred.toLocaleString()}
+                    </td>
+                    <td className="px-5 py-3 text-right tabular-nums">
+                      {row.newCallers.toLocaleString()}
+                    </td>
+                  </tr>
+                  {selectedTenantId === row.tenant.id && (
+                    <tr className="border-t border-border/60 bg-primary/5">
+                      <td colSpan={7} className="px-5 py-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="text-sm">
+                            <strong>
+                              {row.tenant.name} · {selected.label}
+                            </strong>
+                            <p className="mt-1 text-muted-foreground">
+                              {row.calls} calls · {row.minutes} minutes · {row.booked} booked ·{" "}
+                              {row.transferred} transfers · {row.newCallers} new callers · {row.sms}{" "}
+                              SMS follow-ups
+                            </p>
+                          </div>
+                          {row.tenant.slug && (
+                            <Link
+                              to="/admin/clients/$slug"
+                              params={{ slug: row.tenant.slug }}
+                              className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
+                            >
+                              Open client dashboard →
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
