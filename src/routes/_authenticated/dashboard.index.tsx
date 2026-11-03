@@ -1,12 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import {
-  Phone,
-  UserPlus,
-  CalendarCheck,
-  PhoneForwarded,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Phone, UserPlus, CalendarCheck, PhoneForwarded } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -19,7 +14,14 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { subDays, format, startOfDay, startOfMonth } from "date-fns";
+import {
+  subDays,
+  subMonths,
+  format,
+  startOfDay,
+  startOfMonth,
+  differenceInCalendarDays,
+} from "date-fns";
 import { useMe } from "@/lib/me";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Call } from "@/integrations/supabase/app-types";
@@ -52,7 +54,6 @@ function DashboardHome() {
   );
 }
 
-
 export function DashboardView({
   tenantId,
   tenantName,
@@ -68,27 +69,54 @@ export function DashboardView({
   minutesIncluded?: number | null;
   plan?: string | null;
 }) {
+  const [chartRange, setChartRange] = useState<"1D" | "7D" | "14D" | "1M" | "3M" | "9M" | "1Y">(
+    "14D",
+  );
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-calls", tenantId],
+    queryKey: ["dashboard-calls", tenantId, chartRange],
     enabled: !!tenantId,
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const now = new Date();
-      const since = (startOfDay(subDays(now, 13)) < startOfMonth(now)
-        ? startOfDay(subDays(now, 13))
-        : startOfMonth(now)).toISOString();
-      let q = supabase
-        .from("calls")
-        .select("*")
-        .gte("created_at", since)
-        .order("created_at", { ascending: false });
-      if (tenantId) q = q.eq("tenant_id", tenantId);
-      const { data, error } = await q.returns<Call[]>();
-      if (error) throw error;
-      return data ?? [];
+      const chartStart =
+        chartRange === "1D"
+          ? startOfDay(now)
+          : chartRange === "7D"
+            ? startOfDay(subDays(now, 6))
+            : chartRange === "14D"
+              ? startOfDay(subDays(now, 13))
+              : chartRange === "1M"
+                ? startOfMonth(now)
+                : chartRange === "3M"
+                  ? startOfMonth(subMonths(now, 2))
+                  : chartRange === "9M"
+                    ? startOfMonth(subMonths(now, 8))
+                    : startOfMonth(subMonths(now, 11));
+      const since = new Date(
+        Math.min(
+          chartStart.getTime(),
+          startOfDay(subDays(now, 14)).getTime(),
+          startOfMonth(now).getTime(),
+        ),
+      );
+      const allCalls: Call[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        let q = supabase
+          .from("calls")
+          .select("*")
+          .gte("created_at", since.toISOString())
+          .order("created_at", { ascending: false })
+          .range(offset, offset + 999);
+        if (tenantId) q = q.eq("tenant_id", tenantId);
+        const { data, error } = await q.returns<Call[]>();
+        if (error) throw error;
+        allCalls.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      return allCalls;
     },
   });
 
@@ -144,7 +172,7 @@ export function DashboardView({
   );
   const displayMinutesUsed = isLoading ? minutesUsed : liveMinutesUsed;
 
-  // 14-day daily volume
+  // Keep the sparklines independent of the selected chart range.
   const days: { date: string; calls: number; booked: number }[] = [];
   for (let i = 13; i >= 0; i--) {
     const d = startOfDay(subDays(now, i));
@@ -160,10 +188,62 @@ export function DashboardView({
     });
   }
 
+  const chartStart =
+    chartRange === "1D"
+      ? startOfDay(now)
+      : chartRange === "7D"
+        ? startOfDay(subDays(now, 6))
+        : chartRange === "14D"
+          ? startOfDay(subDays(now, 13))
+          : chartRange === "1M"
+            ? startOfMonth(now)
+            : chartRange === "3M"
+              ? startOfMonth(subMonths(now, 2))
+              : chartRange === "9M"
+                ? startOfMonth(subMonths(now, 8))
+                : startOfMonth(subMonths(now, 11));
+  const chartBuckets: { date: string; calls: number; booked: number }[] = [];
+  const monthly = chartRange === "3M" || chartRange === "9M" || chartRange === "1Y";
+  const bucketCount =
+    chartRange === "1D"
+      ? 24
+      : monthly
+        ? chartRange === "3M"
+          ? 3
+          : chartRange === "9M"
+            ? 9
+            : 12
+        : chartRange === "7D"
+          ? 7
+          : chartRange === "14D"
+            ? 14
+            : differenceInCalendarDays(now, chartStart) + 1;
+  for (let i = 0; i < bucketCount; i++) {
+    const start =
+      chartRange === "1D"
+        ? new Date(chartStart.getFullYear(), chartStart.getMonth(), chartStart.getDate(), i)
+        : monthly
+          ? startOfMonth(subMonths(now, bucketCount - i - 1))
+          : new Date(chartStart.getFullYear(), chartStart.getMonth(), chartStart.getDate() + i);
+    const end =
+      chartRange === "1D"
+        ? new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours() + 1)
+        : monthly
+          ? new Date(start.getFullYear(), start.getMonth() + 1, 1)
+          : new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+    const bucketCalls = calls.filter((call) => {
+      const time = new Date(call.created_at);
+      return time >= start && time < end;
+    });
+    chartBuckets.push({
+      date: format(start, chartRange === "1D" ? "ha" : monthly ? "MMM yyyy" : "MMM d"),
+      calls: bucketCalls.length,
+      booked: bucketCalls.filter((call) => call.appointment_booked).length,
+    });
+  }
+
   const sparkFor = (key: "all" | "new" | "booked" | "transferred") =>
-    days.slice(-7).map((d) =>
-      key === "all" ? d.calls : key === "booked" ? d.booked : 0,
-    );
+    days.slice(-7).map((d) => (key === "all" ? d.calls : key === "booked" ? d.booked : 0));
 
   // Outcomes donut (this week)
   const outcomes = thisWeek.reduce<Record<string, number>>((acc, c) => {
@@ -273,15 +353,28 @@ export function DashboardView({
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-5 lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Call Volume — Last 14 Days</h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold">Call Volume</h2>
+            <div className="flex flex-wrap gap-1" role="group" aria-label="Call volume time range">
+              {(["1D", "7D", "14D", "1M", "3M", "9M", "1Y"] as const).map((range) => (
+                <button
+                  key={range}
+                  type="button"
+                  onClick={() => setChartRange(range)}
+                  aria-pressed={chartRange === range}
+                  className={`rounded px-2 py-1 text-xs font-medium ${chartRange === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="h-64">
             {isLoading ? (
               <div className="h-full w-full animate-pulse rounded-md bg-muted" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={days}>
+                <LineChart data={chartBuckets}>
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                   <XAxis
                     dataKey="date"
@@ -367,7 +460,10 @@ export function DashboardView({
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Top Call Reasons This Week</h2>
         {reasonData.length === 0 ? (
-          <EmptyState title="No call reasons yet" description="Reasons will appear as calls come in." />
+          <EmptyState
+            title="No call reasons yet"
+            description="Reasons will appear as calls come in."
+          />
         ) : (
           <div className="space-y-3">
             {reasonData.map((reason) => (
