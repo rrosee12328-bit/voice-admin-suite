@@ -32,6 +32,7 @@ import { Route as AuthenticatedDashboardAnalyticsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminProposalsRouteImport } from './routes/_authenticated/admin.proposals'
 import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin.messages'
 import { Route as AuthenticatedAdminIntakeRouteImport } from './routes/_authenticated/admin.intake'
+import { Route as AuthenticatedAdminFinancialsRouteImport } from './routes/_authenticated/admin.financials'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedDashboardCallsIdRouteImport } from './routes/_authenticated/dashboard.calls.$id'
 import { Route as AuthenticatedAdminIntakeIdRouteImport } from './routes/_authenticated/admin.intake.$id'
@@ -162,6 +163,12 @@ const AuthenticatedAdminIntakeRoute =
     path: '/intake',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminFinancialsRoute =
+  AuthenticatedAdminFinancialsRouteImport.update({
+    id: '/financials',
+    path: '/financials',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
     id: '/analytics',
@@ -199,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/intake/$token': typeof IntakeTokenRoute
   '/proposal/$slug': typeof ProposalSlugRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/proposals': typeof AuthenticatedAdminProposalsRoute
@@ -225,6 +233,7 @@ export interface FileRoutesByTo {
   '/intake/$token': typeof IntakeTokenRoute
   '/proposal/$slug': typeof ProposalSlugRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/proposals': typeof AuthenticatedAdminProposalsRoute
@@ -255,6 +264,7 @@ export interface FileRoutesById {
   '/intake/$token': typeof IntakeTokenRoute
   '/proposal/$slug': typeof ProposalSlugRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/_authenticated/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/_authenticated/admin/intake': typeof AuthenticatedAdminIntakeRouteWithChildren
   '/_authenticated/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/_authenticated/admin/proposals': typeof AuthenticatedAdminProposalsRoute
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
     | '/intake/$token'
     | '/proposal/$slug'
     | '/admin/analytics'
+    | '/admin/financials'
     | '/admin/intake'
     | '/admin/messages'
     | '/admin/proposals'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '/intake/$token'
     | '/proposal/$slug'
     | '/admin/analytics'
+    | '/admin/financials'
     | '/admin/intake'
     | '/admin/messages'
     | '/admin/proposals'
@@ -340,6 +352,7 @@ export interface FileRouteTypes {
     | '/intake/$token'
     | '/proposal/$slug'
     | '/_authenticated/admin/analytics'
+    | '/_authenticated/admin/financials'
     | '/_authenticated/admin/intake'
     | '/_authenticated/admin/messages'
     | '/_authenticated/admin/proposals'
@@ -532,6 +545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIntakeRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/financials': {
+      id: '/_authenticated/admin/financials'
+      path: '/financials'
+      fullPath: '/admin/financials'
+      preLoaderRoute: typeof AuthenticatedAdminFinancialsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/analytics': {
       id: '/_authenticated/admin/analytics'
       path: '/analytics'
@@ -579,6 +599,7 @@ const AuthenticatedAdminIntakeRouteWithChildren =
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminFinancialsRoute: typeof AuthenticatedAdminFinancialsRoute
   AuthenticatedAdminIntakeRoute: typeof AuthenticatedAdminIntakeRouteWithChildren
   AuthenticatedAdminMessagesRoute: typeof AuthenticatedAdminMessagesRoute
   AuthenticatedAdminProposalsRoute: typeof AuthenticatedAdminProposalsRoute
@@ -588,6 +609,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminFinancialsRoute: AuthenticatedAdminFinancialsRoute,
   AuthenticatedAdminIntakeRoute: AuthenticatedAdminIntakeRouteWithChildren,
   AuthenticatedAdminMessagesRoute: AuthenticatedAdminMessagesRoute,
   AuthenticatedAdminProposalsRoute: AuthenticatedAdminProposalsRoute,
