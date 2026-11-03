@@ -16,8 +16,8 @@ import type { Tenant, Call } from "@/integrations/supabase/app-types";
 import { PLAN_PRICE, PLAN_LABEL } from "@/lib/plan-gating";
 import { PlanBadge } from "@/components/badges";
 import { SpotlightCard } from "@/components/spotlight-card";
-import { CountUp } from "@/components/count-up";
 import { cn } from "@/lib/utils";
+import { PlatformHistory } from "@/components/platform-history";
 
 const secondsToBillableMinutes = (seconds: number) => Math.ceil(seconds / 60);
 
@@ -65,12 +65,19 @@ function PlatformAnalytics() {
   const monthCallsQ = useQuery({
     queryKey: ["platform-analytics-calls-rows", since],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("calls")
-        .select("tenant_id, duration_seconds")
-        .gte("created_at", since);
-      if (error) throw error;
-      return (data ?? []) as Pick<Call, "tenant_id" | "duration_seconds">[];
+      const calls: Pick<Call, "id" | "tenant_id" | "duration_seconds">[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase
+          .from("calls")
+          .select("id, tenant_id, duration_seconds")
+          .gte("created_at", since)
+          .order("id", { ascending: false })
+          .range(offset, offset + 999);
+        if (error) throw error;
+        calls.push(...((data ?? []) as typeof calls));
+        if (!data || data.length < 1000) break;
+      }
+      return calls;
     },
   });
 
@@ -81,7 +88,19 @@ function PlatformAnalytics() {
         .from("calls")
         .select("id, tenant_id, caller_name, caller_phone, created_at, outcome, duration_seconds")
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(8)
+        .returns<
+          Pick<
+            Call,
+            | "id"
+            | "tenant_id"
+            | "caller_name"
+            | "caller_phone"
+            | "created_at"
+            | "outcome"
+            | "duration_seconds"
+          >[]
+        >();
       if (error) throw error;
       return data ?? [];
     },
@@ -129,8 +148,7 @@ function PlatformAnalytics() {
           backgroundImage:
             "radial-gradient(color-mix(in oklab, var(--foreground) 10%, transparent) 1px, transparent 1px)",
           backgroundSize: "24px 24px",
-          maskImage:
-            "radial-gradient(ellipse at top, black 30%, transparent 75%)",
+          maskImage: "radial-gradient(ellipse at top, black 30%, transparent 75%)",
         }}
       />
 
@@ -142,7 +160,7 @@ function PlatformAnalytics() {
           </div>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Platform Analytics</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Live aggregated usage, minutes, and revenue across every client workspace.
+            Live call and minute totals across every client workspace.
           </p>
         </div>
         <Link
@@ -153,29 +171,36 @@ function PlatformAnalytics() {
         </Link>
       </header>
 
+      {(tenantsQ.error || callsQ.error || monthCallsQ.error) && (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+        >
+          Some platform totals could not be loaded. Refresh the page to try again.
+        </div>
+      )}
+
       {/* BENTO GRID */}
       <section className="grid auto-rows-[minmax(0,_1fr)] grid-cols-12 gap-4">
         {/* Hero: MRR */}
         <KpiTile
           className="col-span-12 sm:col-span-6 lg:col-span-5 lg:row-span-2"
-          label="Monthly Recurring Revenue"
+          label="Listed plan value estimate"
           icon={<DollarSign className="h-4 w-4" />}
           tone="primary"
           large
         >
           <div className="flex items-baseline gap-2">
-            <CountUp
-              value={mrr}
-              prefix="$"
-              className="text-5xl font-semibold tracking-tight tabular-nums"
-            />
+            <span className="text-5xl font-semibold tracking-tight tabular-nums">
+              {tenantsQ.isLoading ? "…" : `$${mrr.toLocaleString()}`}
+            </span>
             <span className="text-sm text-muted-foreground">/mo</span>
           </div>
           <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-success">
               <TrendingUp className="h-3 w-3" /> live
             </span>
-            <span>Across {totalClients} workspaces</span>
+            <span>Catalog prices across {totalClients} workspaces; not collected revenue</span>
           </div>
           <PlanBars planBreakdown={planBreakdown} tenants={tenants} />
         </KpiTile>
@@ -185,7 +210,9 @@ function PlatformAnalytics() {
           label="Total Clients"
           icon={<Users className="h-4 w-4" />}
         >
-          <CountUp value={totalClients} className="text-3xl font-semibold tabular-nums" />
+          <span className="text-3xl font-semibold tabular-nums">
+            {tenantsQ.isLoading ? "…" : totalClients.toLocaleString()}
+          </span>
           <p className="mt-1 text-xs text-muted-foreground">
             {activeClients} active · {totalClients - activeClients} paused
           </p>
@@ -197,7 +224,9 @@ function PlatformAnalytics() {
           icon={<Activity className="h-4 w-4" />}
           tone="success"
         >
-          <CountUp value={activeClients} className="text-3xl font-semibold tabular-nums" />
+          <span className="text-3xl font-semibold tabular-nums">
+            {tenantsQ.isLoading ? "…" : activeClients.toLocaleString()}
+          </span>
           <p className="mt-1 text-xs text-muted-foreground">Live receptionists right now</p>
         </KpiTile>
 
@@ -206,8 +235,13 @@ function PlatformAnalytics() {
           label="Calls This Month"
           icon={<Phone className="h-4 w-4" />}
         >
-          <CountUp value={callsQ.data ?? 0} className="text-3xl font-semibold tabular-nums" />
-          <p className="mt-1 text-xs text-muted-foreground">Since {new Date(since).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>
+          <span className="text-3xl font-semibold tabular-nums">
+            {callsQ.isLoading ? "…" : (callsQ.data ?? 0).toLocaleString()}
+          </span>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Since{" "}
+            {new Date(since).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          </p>
         </KpiTile>
 
         <KpiTile
@@ -216,10 +250,14 @@ function PlatformAnalytics() {
           icon={<Clock className="h-4 w-4" />}
           tone={overLimitCount > 0 ? "warning" : "info"}
         >
-          <CountUp value={totalMinutes} className="text-3xl font-semibold tabular-nums" />
+          <span className="text-3xl font-semibold tabular-nums">
+            {monthCallsQ.isLoading ? "…" : totalMinutes.toLocaleString()}
+          </span>
           <p className="mt-1 text-xs text-muted-foreground">
             {overLimitCount > 0 ? (
-              <span className="text-destructive">{overLimitCount} tenant{overLimitCount > 1 ? "s" : ""} over limit</span>
+              <span className="text-destructive">
+                {overLimitCount} tenant{overLimitCount > 1 ? "s" : ""} over limit
+              </span>
             ) : (
               "All tenants within plan limits"
             )}
@@ -231,7 +269,9 @@ function PlatformAnalytics() {
           <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
             <div>
               <h2 className="text-sm font-semibold">Per-tenant usage</h2>
-              <p className="text-xs text-muted-foreground">Minutes consumed this month · rows over limit highlighted</p>
+              <p className="text-xs text-muted-foreground">
+                Minutes consumed this month · rows over limit highlighted
+              </p>
             </div>
             <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               hover rows to spotlight
@@ -256,7 +296,8 @@ function PlatformAnalytics() {
                     const agg = perTenant[t.id] ?? { calls: 0, seconds: 0 };
                     const minutesUsed = secondsToBillableMinutes(agg.seconds);
                     const minutesIncl = t.minutes_included ?? 0;
-                    const pct = minutesIncl > 0 ? Math.min(150, (minutesUsed / minutesIncl) * 100) : 0;
+                    const pct =
+                      minutesIncl > 0 ? Math.min(150, (minutesUsed / minutesIncl) * 100) : 0;
                     const over = minutesIncl > 0 && minutesUsed > minutesIncl;
                     return (
                       <tr
@@ -267,10 +308,17 @@ function PlatformAnalytics() {
                         )}
                       >
                         <td className="px-5 py-3 font-medium">{t.name}</td>
-                        <td className="px-3 py-3"><PlanBadge plan={t.plan} /></td>
+                        <td className="px-3 py-3">
+                          <PlanBadge plan={t.plan} />
+                        </td>
                         <td className="px-3 py-3 w-[200px]">
                           <div className="flex items-center gap-2">
-                            <div className={cn("tabular-nums text-xs", over ? "font-semibold text-destructive" : "text-muted-foreground")}>
+                            <div
+                              className={cn(
+                                "tabular-nums text-xs",
+                                over ? "font-semibold text-destructive" : "text-muted-foreground",
+                              )}
+                            >
                               {minutesUsed.toLocaleString()}
                               <span className="text-muted-foreground/60">
                                 /{minutesIncl > 0 ? minutesIncl.toLocaleString() : "∞"}
@@ -289,7 +337,9 @@ function PlatformAnalytics() {
                             </div>
                           )}
                         </td>
-                        <td className="px-3 py-3 tabular-nums text-muted-foreground">{agg.calls}</td>
+                        <td className="px-3 py-3 tabular-nums text-muted-foreground">
+                          {agg.calls}
+                        </td>
                         <td className="px-5 py-3 text-xs text-muted-foreground capitalize">
                           {t.stripe_subscription_status || "—"}
                         </td>
@@ -318,7 +368,7 @@ function PlatformAnalytics() {
             <div className="p-6 text-sm text-muted-foreground">No calls yet.</div>
           ) : (
             <ul className="divide-y divide-border/60">
-              {(recentCallsQ.data ?? []).map((c: any) => {
+              {(recentCallsQ.data ?? []).map((c) => {
                 const t = tenantById[c.tenant_id];
                 return (
                   <li
@@ -340,7 +390,8 @@ function PlatformAnalytics() {
                       </div>
                       {c.duration_seconds != null && (
                         <div className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                          {Math.floor(c.duration_seconds / 60)}:{String(c.duration_seconds % 60).padStart(2, "0")}
+                          {Math.floor(c.duration_seconds / 60)}:
+                          {String(c.duration_seconds % 60).padStart(2, "0")}
                         </div>
                       )}
                     </div>
@@ -351,6 +402,7 @@ function PlatformAnalytics() {
           )}
         </SpotlightCard>
       </section>
+      <PlatformHistory tenants={tenants} />
     </div>
   );
 }
@@ -385,7 +437,12 @@ function KpiTile({
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             {label}
           </div>
-          <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", toneStyles[tone])}>
+          <div
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-full",
+              toneStyles[tone],
+            )}
+          >
             {icon}
           </div>
         </div>
@@ -431,7 +488,9 @@ function PlanBars({
         {entries.map(([plan, count]) => (
           <li key={plan} className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-muted-foreground">
-              <span className={cn("h-2 w-2 rounded-full", colorFor[plan] || "bg-muted-foreground/40")} />
+              <span
+                className={cn("h-2 w-2 rounded-full", colorFor[plan] || "bg-muted-foreground/40")}
+              />
               {PLAN_LABEL[plan as keyof typeof PLAN_LABEL] || plan}
             </span>
             <span className="tabular-nums font-medium">{count}</span>
