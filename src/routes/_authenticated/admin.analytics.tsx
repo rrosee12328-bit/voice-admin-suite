@@ -165,6 +165,7 @@ function PlatformAnalytics() {
         </div>
         <Link
           to="/dashboard/calls"
+          search={{ tenantId: undefined }}
           className="hidden items-center gap-1 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur transition-colors hover:text-foreground sm:inline-flex"
         >
           Unified call log <ArrowUpRight className="h-3 w-3" />
@@ -209,6 +210,9 @@ function PlatformAnalytics() {
           className="col-span-6 lg:col-span-4"
           label="Total Clients"
           icon={<Users className="h-4 w-4" />}
+          onClick={() =>
+            document.getElementById("platform-client-usage")?.scrollIntoView({ behavior: "smooth" })
+          }
         >
           <span className="text-3xl font-semibold tabular-nums">
             {tenantsQ.isLoading ? "…" : totalClients.toLocaleString()}
@@ -223,6 +227,9 @@ function PlatformAnalytics() {
           label="Active Agents"
           icon={<Activity className="h-4 w-4" />}
           tone="success"
+          onClick={() =>
+            document.getElementById("platform-client-usage")?.scrollIntoView({ behavior: "smooth" })
+          }
         >
           <span className="text-3xl font-semibold tabular-nums">
             {tenantsQ.isLoading ? "…" : activeClients.toLocaleString()}
@@ -234,6 +241,9 @@ function PlatformAnalytics() {
           className="col-span-6 lg:col-span-4"
           label="Calls This Month"
           icon={<Phone className="h-4 w-4" />}
+          onClick={() =>
+            document.getElementById("platform-monthly")?.scrollIntoView({ behavior: "smooth" })
+          }
         >
           <span className="text-3xl font-semibold tabular-nums">
             {callsQ.isLoading ? "…" : (callsQ.data ?? 0).toLocaleString()}
@@ -249,6 +259,9 @@ function PlatformAnalytics() {
           label="Minutes Used"
           icon={<Clock className="h-4 w-4" />}
           tone={overLimitCount > 0 ? "warning" : "info"}
+          onClick={() =>
+            document.getElementById("platform-monthly")?.scrollIntoView({ behavior: "smooth" })
+          }
         >
           <span className="text-3xl font-semibold tabular-nums">
             {monthCallsQ.isLoading ? "…" : totalMinutes.toLocaleString()}
@@ -307,7 +320,19 @@ function PlatformAnalytics() {
                           over && "bg-destructive/[0.06] hover:bg-destructive/[0.1]",
                         )}
                       >
-                        <td className="px-5 py-3 font-medium">{t.name}</td>
+                        <td className="px-5 py-3 font-medium">
+                          {t.slug ? (
+                            <Link
+                              to="/admin/clients/$slug"
+                              params={{ slug: t.slug }}
+                              className="text-primary hover:underline"
+                            >
+                              {t.name} →
+                            </Link>
+                          ) : (
+                            t.name
+                          )}
+                        </td>
                         <td className="px-3 py-3">
                           <PlanBadge plan={t.plan} />
                         </td>
@@ -376,9 +401,14 @@ function PlatformAnalytics() {
                     className="group/row flex items-center justify-between px-5 py-3 text-sm transition-colors hover:bg-muted/40"
                   >
                     <div className="min-w-0">
-                      <div className="truncate font-medium">
-                        {c.caller_name || c.caller_phone || "Unknown caller"}
-                      </div>
+                      <Link
+                        to="/dashboard/calls/$id"
+                        params={{ id: c.id }}
+                        search={{ tenantId: c.tenant_id }}
+                        className="truncate font-medium text-primary hover:underline"
+                      >
+                        {c.caller_name || c.caller_phone || "Unknown caller"} →
+                      </Link>
                       <div className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
                         <span className="h-1 w-1 rounded-full bg-primary/60" />
                         {t?.name ?? "—"}
@@ -414,6 +444,7 @@ function KpiTile({
   children,
   tone = "neutral",
   large = false,
+  onClick,
 }: {
   className?: string;
   label: string;
@@ -421,6 +452,7 @@ function KpiTile({
   children: React.ReactNode;
   tone?: "neutral" | "primary" | "success" | "warning" | "info";
   large?: boolean;
+  onClick?: () => void;
 }) {
   const toneStyles: Record<string, string> = {
     neutral: "bg-muted text-foreground",
@@ -432,7 +464,27 @@ function KpiTile({
 
   return (
     <SpotlightCard className={className}>
-      <div className={cn("flex h-full flex-col p-5", large && "p-6")}>
+      <div
+        role={onClick ? "button" : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onClick={onClick}
+        onKeyDown={
+          onClick
+            ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onClick();
+                }
+              }
+            : undefined
+        }
+        className={cn(
+          "flex h-full flex-col p-5",
+          large && "p-6",
+          onClick &&
+            "cursor-pointer transition-colors hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-primary",
+        )}
+      >
         <div className="mb-4 flex items-center justify-between">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             {label}
@@ -447,6 +499,7 @@ function KpiTile({
           </div>
         </div>
         <div className="flex-1">{children}</div>
+        {onClick && <span className="mt-2 text-xs font-medium text-primary">View details ↓</span>}
       </div>
     </SpotlightCard>
   );
