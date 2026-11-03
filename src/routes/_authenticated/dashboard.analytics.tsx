@@ -33,6 +33,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { CountUp } from "@/components/count-up";
+import { MonthlyPerformance } from "@/components/monthly-performance";
 
 export const Route = createFileRoute("/_authenticated/dashboard/analytics")({
   component: AnalyticsPage,
@@ -349,6 +350,8 @@ function AnalyticsDashboard({
           <span className="text-3xl font-bold tabular-nums">{bookingRate}%</span>
         </KpiCard>
       </div>
+
+      {tenantId && <MonthlyPerformance tenantId={tenantId} />}
 
       <SpotlightCard>
         <div className="border-b border-border/60 px-5 py-4">
