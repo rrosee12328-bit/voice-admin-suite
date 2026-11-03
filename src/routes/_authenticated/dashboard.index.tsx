@@ -76,7 +76,10 @@ export function DashboardView({
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
-      const since = startOfMonth(new Date()).toISOString();
+      const now = new Date();
+      const since = (startOfDay(subDays(now, 13)) < startOfMonth(now)
+        ? startOfDay(subDays(now, 13))
+        : startOfMonth(now)).toISOString();
       let q = supabase
         .from("calls")
         .select("*")
