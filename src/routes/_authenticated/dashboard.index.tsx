@@ -29,6 +29,7 @@ import { StatCard } from "@/components/stat-card";
 import { StatusDot } from "@/components/badges";
 import { EmptyState } from "@/components/empty-state";
 import { UsageWidget } from "@/components/usage-widget";
+import { MonthlyPerformance } from "@/components/monthly-performance";
 
 import { SuperAdminDashboard } from "@/components/super-admin-dashboard";
 
@@ -357,6 +358,8 @@ export function DashboardView({
           />
         </div>
       </section>
+
+      <MonthlyPerformance tenantId={tenantId} />
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-5 lg:col-span-2">
