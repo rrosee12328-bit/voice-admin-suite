@@ -115,8 +115,14 @@ function CallDetailPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
+          {call.call_summary && (
+            <div className="rounded-lg border border-border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold">Call Summary</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">{call.call_summary}</p>
+            </div>
+          )}
           <div className="rounded-lg border border-border bg-card p-5">
-            <h2 className="mb-3 text-sm font-semibold">Patient Info</h2>
+            <h2 className="mb-3 text-sm font-semibold">About the caller</h2>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div>
                 <dt className="text-xs text-muted-foreground">Caller name</dt>
@@ -209,12 +215,7 @@ function CallDetailPage() {
             </div>
           )}
 
-          {call.call_summary && (
-            <div className="rounded-lg border border-border bg-card p-5">
-              <h2 className="mb-3 text-sm font-semibold">Call Summary</h2>
-              <p className="text-sm leading-relaxed text-muted-foreground">{call.call_summary}</p>
-            </div>
-          )}
+
 
           <div className="rounded-lg border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">

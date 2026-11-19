@@ -173,7 +173,7 @@ function CallsPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Call Log</h1>
         <p className="text-sm text-muted-foreground">
-          {isSuperAdmin ? "All calls across every client workspace" : "All calls handled by your AI receptionist"}
+          Choose “Open call” to see who called and what happened.
         </p>
       </header>
 
@@ -181,7 +181,8 @@ function CallsPage() {
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by phone or name…"
+            aria-label="Find a call by name, phone, or email"
+            placeholder="Find a name, phone, or email…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -189,9 +190,9 @@ function CallsPage() {
         </div>
         {isSuperAdmin && (
           <Select value={tenantFilter} onValueChange={setTenantFilter}>
-            <SelectTrigger className="w-48"><SelectValue placeholder="All tenants" /></SelectTrigger>
+            <SelectTrigger className="w-48"><SelectValue placeholder="All workspaces" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All tenants</SelectItem>
+              <SelectItem value="all">All workspaces</SelectItem>
               {(tenantsQ.data ?? []).map((t) => (
                 <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
               ))}
@@ -229,13 +230,13 @@ function CallsPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <EmptyState title="No calls yet" description="When your AI receptionist takes calls, they'll appear here." />
+          calls.length > 0 ? <EmptyState title="No matching calls" description="Try another name or change a filter above." /> : <EmptyState title="No calls yet" description="When your AI receptionist takes calls, they'll appear here." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  {isSuperAdmin && <th className="px-3 py-2 text-left font-medium">Tenant</th>}
+                  {isSuperAdmin && <th className="px-3 py-2 text-left font-medium">Workspace</th>}
                   <th className="px-3 py-2 text-left font-medium">Caller</th>
                   <th className="px-3 py-2 text-left font-medium">Phone</th>
                   <th className="px-3 py-2 text-left font-medium">Email</th>
@@ -264,11 +265,17 @@ function CallsPage() {
                           {tenantById[c.tenant_id]?.name ?? "—"}
                         </td>
                       )}
-                      <td className="px-3 py-2 font-medium">{c.caller_name || "Unknown"}</td>
+                      <td className="px-3 py-2 font-medium">
+                        <div>{c.caller_name || "Unknown caller"}</div>
+                        <Link to="/dashboard/calls/$id" params={{ id: c.id }}
+                          className="inline-flex min-h-9 items-center whitespace-nowrap rounded text-sm font-semibold text-primary underline underline-offset-4 focus-visible:ring-2">
+                          Open call<span className="sr-only"> from {c.caller_name || c.caller_phone || "unknown caller"} on {format(new Date(c.created_at), "PPp")}</span>
+                        </Link>
+                      </td>
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">{c.caller_phone || "—"}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{c.caller_email || "—"}</td>
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">
-                        {format(new Date(c.created_at), "MMM d, HH:mm")}
+                        {format(new Date(c.created_at), "MMM d, h:mm a")}
                       </td>
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">
                         {c.duration_seconds != null ? `${Math.floor(c.duration_seconds / 60)}:${String(c.duration_seconds % 60).padStart(2, "0")}` : "—"}
