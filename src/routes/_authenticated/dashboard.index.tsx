@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Phone, UserPlus, CalendarCheck, PhoneForwarded } from "lucide-react";
+import { ArrowRight, Phone, UserPlus, CalendarCheck, PhoneForwarded } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -25,6 +25,7 @@ import {
 import { useMe } from "@/lib/me";
 import { supabase } from "@/integrations/supabase/client-untyped";
 import type { Call } from "@/integrations/supabase/app-types";
+import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/stat-card";
 import { StatusDot } from "@/components/badges";
 import { EmptyState } from "@/components/empty-state";
@@ -73,7 +74,13 @@ export function DashboardView({
   const [chartRange, setChartRange] = useState<
     "1D" | "7D" | "14D" | "1M" | "3M" | "6M" | "9M" | "1Y"
   >("14D");
-  const navigate = useNavigate();
+  const callLogLink = (
+    <Button asChild className="min-h-11 w-full sm:w-auto">
+      <Link to="/dashboard/calls" search={tenantId ? { tenantId } : {}}>
+        See all calls <ArrowRight aria-hidden="true" />
+      </Link>
+    </Button>
+  );
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-calls", tenantId, chartRange],
@@ -306,12 +313,13 @@ export function DashboardView({
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{tenantName}</h1>
-          <p className="text-sm text-muted-foreground">Call activity overview</p>
+          <p className="text-sm text-muted-foreground">Your calls at a glance</p>
         </div>
         <StatusDot status={agentStatus} />
+        {callLogLink}
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -364,17 +372,17 @@ export function DashboardView({
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-5 lg:col-span-2">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold">Call Volume</h2>
+            <h2 className="text-sm font-semibold">Number of calls</h2>
             <div className="flex flex-wrap gap-1" role="group" aria-label="Call volume time range">
               {(["1D", "7D", "14D", "1M", "3M", "6M", "9M", "1Y"] as const).map((range) => (
                 <button
-                  key={range}
+                  key={{ "1D": "1 day", "7D": "7 days", "14D": "14 days", "1M": "1 month", "3M": "3 months", "6M": "6 months", "9M": "9 months", "1Y": "1 year" }[range]}
                   type="button"
                   onClick={() => setChartRange(range)}
                   aria-pressed={chartRange === range}
                   className={`rounded px-2 py-1 text-xs font-medium ${chartRange === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
                 >
-                  {range}
+                  {{ "1D": "1 day", "7D": "7 days", "14D": "14 days", "1M": "1 month", "3M": "3 months", "6M": "6 months", "9M": "9 months", "1Y": "1 year" }[range]}
                 </button>
               ))}
             </div>
@@ -431,7 +439,7 @@ export function DashboardView({
         </div>
 
         <div className="rounded-lg border border-border bg-card p-5">
-          <h2 className="mb-4 text-sm font-semibold">Outcomes This Week</h2>
+          <h2 className="mb-4 text-sm font-semibold">What happened on calls this week</h2>
           <div className="h-64">
             {outcomeData.length === 0 ? (
               <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
@@ -468,7 +476,7 @@ export function DashboardView({
       </section>
 
       <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="mb-4 text-sm font-semibold">Top Call Reasons This Week</h2>
+        <h2 className="mb-4 text-sm font-semibold">Why people called this week</h2>
         {reasonData.length === 0 ? (
           <EmptyState
             title="No call reasons yet"
@@ -501,18 +509,12 @@ export function DashboardView({
         )}
       </section>
 
-      <div className="text-xs text-muted-foreground">
-        <button
-          className="underline-offset-2 hover:underline"
-          onClick={() =>
-            navigate({
-              to: "/dashboard/calls",
-              search: tenantId ? { tenantId } : {},
-            })
-          }
-        >
-          View full call log →
-        </button>
+      <div className="flex flex-col gap-3 rounded-lg border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="font-semibold">Call history</h2>
+          <p className="text-sm text-muted-foreground">Choose a call to read its summary.</p>
+        </div>
+        {callLogLink}
       </div>
     </div>
   );
