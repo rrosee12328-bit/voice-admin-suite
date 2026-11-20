@@ -159,7 +159,7 @@ async function sendEmail(payload: {
   to: string;
   toName?: string | null;
   tenantId?: string | null;
-  callId?: string | null;
+  callId: string;
   subject: string;
   html: string;
   text: string;
@@ -171,10 +171,16 @@ async function sendEmail(payload: {
     return;
   }
 
+  // One provider request identity per portal call and normalized recipient.
+  const identity = JSON.stringify([payload.callId, payload.to.trim().toLowerCase()]);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(identity));
+  const hex = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+  const logId = [hex.slice(0, 8), hex.slice(8, 12), "8" + hex.slice(13, 16), "a" + hex.slice(17, 20), hex.slice(20, 32)].join("-");
   const resendRes = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       authorization: `Bearer ${RESEND_API_KEY}`,
+      "Idempotency-Key": `voice-call-summary/${hex}`,
       "content-type": "application/json",
     },
     body: JSON.stringify({
@@ -195,10 +201,11 @@ async function sendEmail(payload: {
     // Keep the raw body for the email log below.
   }
 
-  await rest("email_messages", {
+  await rest(resendRes.ok ? "email_messages?on_conflict=id" : "email_messages", {
     method: "POST",
-    headers: { prefer: "return=minimal" },
+    headers: { prefer: resendRes.ok ? "resolution=ignore-duplicates,return=minimal" : "return=minimal" },
     body: JSON.stringify({
+      ...(resendRes.ok ? { id: logId } : {}),
       tenant_id: payload.tenantId || null,
       call_id: payload.callId || null,
       to_email: payload.to,
@@ -542,7 +549,7 @@ async function notifyCallComplete(event: string, callPayload: JsonObject, stored
   const email = buildNotificationEmail(tenantName, storedCall);
   for (const recipient of recipients) {
     const existing = await rest<Array<{ id: string }>>(
-      `email_messages?select=id&call_id=eq.${encodeURIComponent(storedCall.id)}&to_email=eq.${encodeURIComponent(recipient.email)}&limit=1`,
+      `email_messages?select=id&call_id=eq.${encodeURIComponent(storedCall.id)}&to_email=eq.${encodeURIComponent(recipient.email)}&resend_id=not.is.null&limit=1`,
     );
     if (existing[0]?.id) continue;
 
